@@ -1,0 +1,192 @@
+{
+  "lexicon": 1,
+  "id": "id.career.profile",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "Declaration record for an academic profile. Fixed rkey 'self' -- per the atproto Lexicon style guide, a single-instance declaration record marks an account as participating in this app modality, and deleting it signals departure. Holds only identity and cross-registry identifiers; every substantive CV section is its own record type.",
+      "key": "literal:self",
+      "record": {
+        "type": "object",
+        "required": [
+          "createdAt"
+        ],
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "maxLength": 640,
+            "maxGraphemes": 64,
+            "description": "Name as it should appear on a CV, in the profile's primary locale."
+          },
+          "nativeName": {
+            "type": "string",
+            "maxLength": 640,
+            "maxGraphemes": 64,
+            "description": "Name in the native script, e.g. '山田 太郎', when displayName is romanised. Both are needed: publications appear under both forms."
+          },
+          "namePreferredCitation": {
+            "type": "string",
+            "maxLength": 640,
+            "maxGraphemes": 64,
+            "description": "How the person prefers to be cited, e.g. 'T. Yamada'. Disambiguation matters more here than aesthetics."
+          },
+          "pronouns": {
+            "type": "string",
+            "maxLength": 100,
+            "maxGraphemes": 20
+          },
+          "headline": {
+            "type": "string",
+            "maxLength": 1000,
+            "maxGraphemes": 200,
+            "description": "One line, e.g. 'Assistant Professor of Computational Biology'."
+          },
+          "bio": {
+            "type": "string",
+            "maxLength": 15000,
+            "maxGraphemes": 3000
+          },
+          "primaryAffiliation": {
+            "type": "ref",
+            "ref": "id.career.defs#organization"
+          },
+          "orcid": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Bare ORCID iD. The single most useful field here: it is the bridge to every existing scholarly registry."
+          },
+          "researchmapId": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "researchmap permalink ID. Effectively mandatory in Japan."
+          },
+          "googleScholarId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "scopusAuthorId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "webOfScienceId": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "ResearcherID / Publons."
+          },
+          "dblpId": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "semanticScholarId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "arxivAuthorId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "kakenId": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "JSPS 研究者番号 (8 digits). Required on every Japanese grant application."
+          },
+          "researchFields": {
+            "type": "array",
+            "maxLength": 20,
+            "items": {
+              "type": "ref",
+              "ref": "id.career.defs#fieldCode"
+            }
+          },
+          "keywords": {
+            "type": "array",
+            "maxLength": 30,
+            "items": {
+              "type": "string",
+              "maxLength": 200,
+              "maxGraphemes": 40
+            }
+          },
+          "languages": {
+            "type": "array",
+            "maxLength": 15,
+            "items": {
+              "type": "ref",
+              "ref": "id.career.defs#languageSkill"
+            }
+          },
+          "websites": {
+            "type": "array",
+            "maxLength": 15,
+            "items": {
+              "type": "ref",
+              "ref": "id.career.defs#webLink"
+            }
+          },
+          "acceptingStudents": {
+            "type": "boolean",
+            "description": "Whether the person is currently taking on graduate students. Cheap to store, genuinely useful to prospective students, and absent from every existing registry."
+          },
+          "openToCollaboration": {
+            "type": "boolean"
+          },
+          "labels": {
+            "type": "union",
+            "refs": [
+              "com.atproto.label.defs#selfLabels"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "jglobalId": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "J-GLOBAL ID, e.g. '201701013771755270'. Assigned by JST and cross-referenced by most Japanese research administration systems."
+          },
+          "researchmapMemberId": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "researchmap 会員ID, e.g. 'B000285141'. Distinct from researchmapId, which is the URL permalink."
+          },
+          "degrees": {
+            "type": "array",
+            "maxLength": 10,
+            "description": "Degrees held, as printed in the 学位 field of a Japanese profile ('工学博士(名古屋大学)'). Duplicates information in id.career.education on purpose: the education record describes a period of study, this is the standing credential, and Japanese application forms ask for the latter without the former.",
+            "items": {
+              "type": "object",
+              "required": [
+                "name"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "maxLength": 300,
+                  "maxGraphemes": 60,
+                  "description": "e.g. '工学博士', 'Ph.D.'"
+                },
+                "institution": {
+                  "type": "ref",
+                  "ref": "id.career.defs#organization"
+                },
+                "year": {
+                  "type": "integer"
+                },
+                "educationRef": {
+                  "type": "ref",
+                  "ref": "com.atproto.repo.strongRef",
+                  "description": "StrongRef to the id.career.education record this credential came from, when one exists."
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

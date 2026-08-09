@@ -1,0 +1,35 @@
+{
+  "lexicon": 1,
+  "id": "id.career.education",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "One period of study. NOTE: check lexicon.garden for an existing education record under id.sifa.* before adopting this -- if Sifa defines one, use theirs and drop this file. It is defined here only because degree, thesis, and advisor fields have no equivalent in a generic employment-position record. Dates use the id.sifa.* freeform shape (YYYY, YYYY-MM, or YYYY-MM-DD) for cross-namespace compatibility.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["institution", "createdAt"],
+        "properties": {
+          "institution": { "type": "ref", "ref": "id.career.defs#organization" },
+          "degree": {
+            "type": "string",
+            "knownValues": ["doctorate", "master", "bachelor", "associate", "professionalDoctorate", "postdoctoral", "diploma", "certificate", "exchange", "nonDegree", "highSchool"],
+            "description": "Structured degree level. 'postdoctoral' lives here rather than in employment because many CVs list it under education, and a dossier can route it either way."
+          },
+          "degreeName": { "type": "string", "maxLength": 500, "maxGraphemes": 100, "description": "Degree as awarded and as it must be printed, e.g. '博士(工学)', 'Ph.D. in Computer Science'. Not derivable from `degree`." },
+          "fieldOfStudy": { "type": "string", "maxLength": 500, "maxGraphemes": 100 },
+          "startedAt": { "type": "string", "maxLength": 10, "description": "YYYY, YYYY-MM, or YYYY-MM-DD." },
+          "endedAt": { "type": "string", "maxLength": 10, "description": "YYYY, YYYY-MM, or YYYY-MM-DD. Required context when status is not 'inProgress'." },
+          "status": { "type": "string", "knownValues": ["completed", "inProgress", "expected", "withdrawn", "creditsCompletedNoDegree"], "description": "'creditsCompletedNoDegree' exists because 単位取得退学 is a standard and non-pejorative outcome in Japan that no international schema represents." },
+          "thesisTitle": { "type": "string", "maxLength": 3000, "maxGraphemes": 300 },
+          "thesisRef": { "type": "ref", "ref": "com.atproto.repo.strongRef", "description": "StrongRef to a pub.paper.reference record for the thesis, when it has been deposited." },
+          "advisors": { "type": "array", "maxLength": 10, "items": { "type": "ref", "ref": "id.career.defs#personRef" } },
+          "honors": { "type": "string", "maxLength": 500, "maxGraphemes": 100, "description": "e.g. 'summa cum laude', '総代'." },
+          "url": { "type": "string", "format": "uri" },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

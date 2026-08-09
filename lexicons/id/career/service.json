@@ -1,0 +1,108 @@
+{
+  "lexicon": 1,
+  "id": "id.career.service",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "Service to the profession: peer review, editorial roles, programme committees, society office, organising. CRITICAL PRIVACY CONSTRAINT: for peer review, this schema records the VENUE and an aggregate COUNT only. There is deliberately no field for which manuscripts were reviewed, and none must ever be added -- reviewer anonymity is constitutive of the institution, and a public record identifying reviewed manuscripts would break it irreversibly for authors who never consented.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": [
+          "type",
+          "venue",
+          "createdAt"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "knownValues": [
+              "peerReview",
+              "editorInChief",
+              "editor",
+              "associateEditor",
+              "guestEditor",
+              "editorialBoard",
+              "areaChair",
+              "seniorPcMember",
+              "pcMember",
+              "organizer",
+              "generalChair",
+              "programChair",
+              "sessionChair",
+              "societyRole",
+              "committee",
+              "governmentCommittee",
+              "academyMember",
+              "advisoryBoard",
+              "externalExaminer",
+              "grantReviewer",
+              "accreditationReviewer",
+              "mentoring"
+            ],
+            "description": "'academyMember' covers 日本学術会議 連携会員/会員 and equivalent national academy appointments; 'governmentCommittee' covers 審議会・委員会 appointments. Both are 委員歴 in researchmap, which is a separate CV section from peer review and editorial work -- a dossier separates them via sectionSpec.includeTypes rather than via separate record types."
+          },
+          "venue": {
+            "type": "string",
+            "maxLength": 1000,
+            "maxGraphemes": 200,
+            "description": "Journal, conference, society, or funding body as it should be printed."
+          },
+          "venueOrg": {
+            "type": "ref",
+            "ref": "id.career.defs#organization"
+          },
+          "roleTitle": {
+            "type": "string",
+            "maxLength": 500,
+            "maxGraphemes": 100,
+            "description": "Free-text title for roles the enum cannot capture, e.g. '理事', 'Treasurer', 'Diversity Chair'."
+          },
+          "startedAt": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "YYYY, YYYY-MM, or YYYY-MM-DD."
+          },
+          "endedAt": {
+            "type": "string",
+            "maxLength": 10
+          },
+          "status": {
+            "type": "string",
+            "knownValues": [
+              "current",
+              "past"
+            ]
+          },
+          "reviewCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of manuscripts reviewed for this venue in this period. AGGREGATE ONLY. Never record which manuscripts."
+          },
+          "scope": {
+            "type": "ref",
+            "ref": "id.career.defs#scope"
+          },
+          "verificationUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Link to an external recognition record (ORCID peer-review record, Web of Science Reviewer Recognition). These systems already publish counts without identifying manuscripts, so citing them adds credibility at no privacy cost."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 4000,
+            "maxGraphemes": 800
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    }
+  }
+}

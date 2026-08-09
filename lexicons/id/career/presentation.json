@@ -1,0 +1,41 @@
+{
+  "lexicon": 1,
+  "id": "id.career.presentation",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A talk, poster, panel, or tutorial. Posters and talks share one record type with a `type` enum rather than getting separate lexicons: their fields are identical and splitting them would produce two near-duplicate schemas that every consumer must implement twice.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["title", "type", "createdAt"],
+        "properties": {
+          "title": { "type": "string", "maxLength": 3000, "maxGraphemes": 300 },
+          "type": { "type": "string", "knownValues": ["keynote", "invited", "contributed", "poster", "panel", "tutorial", "seminar", "lightning", "demo", "publicLecture", "thesisDefense"] },
+          "eventName": { "type": "string", "maxLength": 1000, "maxGraphemes": 200, "description": "Conference, workshop, or seminar series as it should be printed." },
+          "eventSeries": { "type": "string", "maxLength": 500, "maxGraphemes": 100, "description": "Stable series name across years, e.g. 'NeurIPS', '日本物理学会年次大会'. Lets an AppView group editions." },
+          "eventEdition": { "type": "string", "maxLength": 100, "description": "e.g. '38th', '2026 Spring'." },
+          "host": { "type": "ref", "ref": "id.career.defs#organization", "description": "Hosting or inviting institution. For an invited seminar this is the CV-relevant part, not the event name." },
+          "place": { "type": "string", "maxLength": 500, "maxGraphemes": 100 },
+          "country": { "type": "string", "maxLength": 2, "description": "ISO 3166-1 alpha-2. Absent for online-only events." },
+          "isOnline": { "type": "boolean" },
+          "date": { "type": "string", "maxLength": 10, "description": "YYYY, YYYY-MM, or YYYY-MM-DD." },
+          "endDate": { "type": "string", "maxLength": 10 },
+          "scope": { "type": "ref", "ref": "id.career.defs#scope" },
+          "language": { "type": "string", "maxLength": 32, "description": "BCP-47. Japanese CVs routinely separate 国内学会(和文) from international talks." },
+          "refereed": { "type": "boolean", "description": "Whether the abstract was peer reviewed. Distinguishes a screened conference talk from an open call." },
+          "presenterRole": { "type": "string", "knownValues": ["presenter", "coPresenter", "coAuthorNotPresenting"], "description": "'coAuthorNotPresenting' is listed on many CVs but must be distinguishable, since claiming a talk you did not give is a real integrity issue." },
+          "coPresenters": { "type": "array", "maxLength": 50, "items": { "type": "ref", "ref": "id.career.defs#personRef" } },
+          "relatedWork": { "type": "ref", "ref": "com.atproto.repo.strongRef", "description": "StrongRef to the pub.paper.reference this talk presented, when one exists." },
+          "abstractText": { "type": "string", "maxLength": 10000, "maxGraphemes": 2000 },
+          "slidesUrl": { "type": "string", "format": "uri" },
+          "posterUrl": { "type": "string", "format": "uri" },
+          "videoUrl": { "type": "string", "format": "uri" },
+          "eventUrl": { "type": "string", "format": "uri" },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

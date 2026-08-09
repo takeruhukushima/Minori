@@ -1,0 +1,29 @@
+{
+  "lexicon": 1,
+  "id": "id.career.supervision",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "Supervision or mentoring of a student or junior researcher. PRIVACY: this record is about a third party, published from the supervisor's account, in a power-asymmetric relationship. The student's name MUST NOT be populated without their explicit, revocable consent; conforming clients default `student.name` to empty and require an affirmative action to set it. A DID reference is preferred, since it lets the student control their own presentation. A record with no student identity at all is still useful -- '3 doctoral students supervised' is what most CVs actually print.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["role", "createdAt"],
+        "properties": {
+          "role": { "type": "string", "knownValues": ["primaryAdvisor", "coAdvisor", "committeeMember", "externalExaminer", "labSupervisor", "internshipSupervisor", "postdocMentor", "informalMentor"] },
+          "degree": { "type": "string", "knownValues": ["doctorate", "master", "bachelor", "postdoc", "intern", "visitingStudent", "highSchool"] },
+          "student": { "type": "ref", "ref": "id.career.defs#personRef", "description": "Prefer DID. See the record-level privacy note before setting `name`." },
+          "institution": { "type": "ref", "ref": "id.career.defs#organization" },
+          "startedAt": { "type": "string", "maxLength": 10, "description": "YYYY, YYYY-MM, or YYYY-MM-DD." },
+          "endedAt": { "type": "string", "maxLength": 10 },
+          "status": { "type": "string", "knownValues": ["inProgress", "completed", "discontinued"], "description": "'discontinued' is recorded neutrally and carries no judgement; clients should not render it as a negative outcome." },
+          "thesisTitle": { "type": "string", "maxLength": 3000, "maxGraphemes": 300, "description": "Only with the student's consent, since a thesis title identifies them as surely as a name." },
+          "thesisRef": { "type": "ref", "ref": "com.atproto.repo.strongRef", "description": "StrongRef to a pub.paper.reference for the deposited thesis. Once a thesis is publicly deposited its authorship is already public." },
+          "coSupervisors": { "type": "array", "maxLength": 10, "items": { "type": "ref", "ref": "id.career.defs#personRef" } },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

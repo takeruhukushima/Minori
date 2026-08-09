@@ -1,0 +1,41 @@
+{
+  "lexicon": 1,
+  "id": "id.career.outreach",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "Public engagement and media activity (researchmap 社会貢献活動 and メディア報道). Distinct from id.career.presentation, which is a scholarly talk to a scholarly audience, and from id.career.service, which is work for the profession. `roles` is an ARRAY because researchmap explicitly permits several per activity -- one entry can be 企画 and 司会 and 運営参加・支援 at once -- and collapsing that to a single value loses real information about how much of an event a person actually ran.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["title", "createdAt"],
+        "properties": {
+          "title": { "type": "string", "maxLength": 2000, "maxGraphemes": 300, "description": "Event, programme, or article title." },
+          "kind": {
+            "type": "string",
+            "knownValues": ["publicLecture", "scienceCafe", "workshop", "symposium", "panel", "schoolVisit", "exhibition", "openCampus", "mediaAppearance", "newspaper", "magazine", "tvRadio", "webArticle", "podcast", "interview", "pressRelease", "policyAdvice", "consultation", "competitionJudging", "other"]
+          },
+          "roles": {
+            "type": "array",
+            "maxLength": 8,
+            "description": "All roles held in this activity. Maps directly onto the researchmap 役割 vocabulary.",
+            "items": { "type": "string", "knownValues": ["planner", "organizer", "moderator", "panelist", "lecturer", "advisor", "informationProvider", "interviewee", "commentator", "judge", "host", "supportStaff"] }
+          },
+          "organizer": { "type": "ref", "ref": "id.career.defs#organization", "description": "Hosting body, broadcaster, or publication." },
+          "mediaOutlet": { "type": "string", "maxLength": 500, "maxGraphemes": 100, "description": "Programme or publication name for media items, e.g. 'NHK クローズアップ現代', '日本経済新聞'." },
+          "place": { "type": "string", "maxLength": 500, "maxGraphemes": 100 },
+          "country": { "type": "string", "maxLength": 2, "description": "ISO 3166-1 alpha-2." },
+          "startedAt": { "type": "string", "maxLength": 10, "description": "YYYY, YYYY-MM, or YYYY-MM-DD." },
+          "endedAt": { "type": "string", "maxLength": 10 },
+          "audience": { "type": "string", "knownValues": ["generalPublic", "schoolStudents", "undergraduates", "industry", "policymakers", "patients", "media"] },
+          "language": { "type": "string", "maxLength": 32, "description": "BCP-47." },
+          "relatedWork": { "type": "ref", "ref": "com.atproto.repo.strongRef", "description": "StrongRef to the pub.paper.reference the coverage was about, which is the link that makes outreach traceable to research." },
+          "description": { "type": "string", "maxLength": 5000, "maxGraphemes": 1000 },
+          "url": { "type": "string", "format": "uri" },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

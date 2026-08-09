@@ -1,0 +1,27 @@
+{
+  "lexicon": 1,
+  "id": "id.career.membership",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "Membership of a learned society or professional body (researchmap 所属学協会). Separate from id.career.service because membership is a standing affiliation while service is work performed: a person belongs to a society for decades and may hold office in it for two years, and CVs list these in different sections. Note that researchmap lists societies with no dates at all, so every field except `organization` is optional.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["organization", "createdAt"],
+        "properties": {
+          "organization": { "type": "ref", "ref": "id.career.defs#organization", "description": "The society, e.g. 日本生物工学会, IEEE." },
+          "grade": { "type": "string", "knownValues": ["regular", "student", "associate", "senior", "fellow", "honorary", "emeritus", "lifetime", "corporate"], "description": "Membership grade. 'fellow' and 'senior' are competitive distinctions in many societies and belong on a CV; consider also creating an id.career.award record for those." },
+          "startedAt": { "type": "string", "maxLength": 10, "description": "YYYY, YYYY-MM, or YYYY-MM-DD." },
+          "endedAt": { "type": "string", "maxLength": 10 },
+          "status": { "type": "string", "knownValues": ["current", "past"] },
+          "membershipNumber": { "type": "string", "maxLength": 64, "description": "Rarely public. Include only if the society expects it on submissions." },
+          "scope": { "type": "ref", "ref": "id.career.defs#scope" },
+          "url": { "type": "string", "format": "uri" },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

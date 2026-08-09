@@ -1,0 +1,45 @@
+{
+  "lexicon": 1,
+  "id": "id.career.openSourceContribution",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A contribution to open-source software, an open dataset, or open documentation. Deliberately stores no counts (commits, stars, downloads): those go stale immediately, differ by source, and are better fetched live by an AppView from the registry or forge.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["name", "createdAt"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 500, "maxGraphemes": 100 },
+          "description": { "type": "string", "maxLength": 10000, "maxGraphemes": 2000 },
+          "role": { "type": "string", "knownValues": ["author", "maintainer", "coreContributor", "contributor", "reviewer", "documentation", "translator", "communityOrganizer"] },
+          "repoUrl": { "type": "string", "format": "uri" },
+          "repoAtUri": { "type": "string", "format": "at-uri", "description": "AT-URI of the repository when it is hosted natively on atproto (e.g. Tangled). Preferred over repoUrl where available, since it survives forge migration." },
+          "projectKind": { "type": "string", "knownValues": ["library", "application", "researchSoftware", "dataset", "specification", "documentation", "infrastructure"] },
+          "packages": {
+            "type": "array",
+            "maxLength": 10,
+            "description": "Registry publications, which are what make a project citable and installable.",
+            "items": {
+              "type": "object",
+              "required": ["registry", "name"],
+              "properties": {
+                "registry": { "type": "string", "knownValues": ["npm", "pypi", "cran", "bioconductor", "crates", "maven", "conda", "rubygems", "go", "hex", "dockerhub"] },
+                "name": { "type": "string", "maxLength": 300 },
+                "url": { "type": "string", "format": "uri" }
+              }
+            }
+          },
+          "license": { "type": "string", "maxLength": 100, "description": "SPDX identifier." },
+          "startedAt": { "type": "string", "maxLength": 10, "description": "YYYY, YYYY-MM, or YYYY-MM-DD." },
+          "endedAt": { "type": "string", "maxLength": 10 },
+          "status": { "type": "string", "knownValues": ["active", "maintenance", "past", "archived"] },
+          "relatedWork": { "type": "ref", "ref": "com.atproto.repo.strongRef", "description": "StrongRef to a software paper or Zenodo DOI record in pub.paper.reference, which is how software becomes formally citable." },
+          "highlights": { "type": "array", "maxLength": 10, "items": { "type": "string", "maxLength": 1000, "maxGraphemes": 200 }, "description": "Specific contributions worth naming on a CV, e.g. 'authored the sparse solver backend'." },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

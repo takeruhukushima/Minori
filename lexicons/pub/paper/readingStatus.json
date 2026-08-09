@@ -1,0 +1,33 @@
+{
+  "lexicon": 1,
+  "id": "pub.paper.readingStatus",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "The account holder's reading state for one reference. Separate from both the reference and its memberships because status is per-person-per-paper: it should survive the paper moving between collections, and 'toRead' -> 'read' should not touch immutable bibliographic metadata. RECOMMENDED CONVENTION: use the target reference's rkey as this record's rkey, which makes 'one status per reference' structurally guaranteed and turns lookup into a getRecord rather than a scan.",
+      "key": "any",
+      "record": {
+        "type": "object",
+        "required": ["reference", "status", "updatedAt"],
+        "properties": {
+          "reference": { "type": "ref", "ref": "com.atproto.repo.strongRef" },
+          "status": {
+            "type": "string",
+            "knownValues": ["toRead", "reading", "skimmed", "read", "abandoned", "referenceOnly"],
+            "description": "'skimmed' and 'referenceOnly' are separated from 'read' deliberately: most cited papers are never read end to end, and pretending otherwise makes the field useless."
+          },
+          "priority": { "type": "integer", "minimum": 0, "maximum": 3, "description": "0 = someday, 3 = blocking current work." },
+          "dueBy": { "type": "string", "format": "datetime", "description": "Journal club date, exam, or self-imposed deadline." },
+          "startedAt": { "type": "string", "format": "datetime" },
+          "finishedAt": { "type": "string", "format": "datetime" },
+          "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+          "note": { "type": "string", "maxLength": 20000, "maxGraphemes": 4000, "description": "Reading notes. For passage-level highlights prefer linking to a dedicated annotation app rather than growing this field -- annotation is solved elsewhere in the network." },
+          "shelfLife": { "type": "string", "knownValues": ["active", "archived"], "description": "Lets a client hide a stale to-read pile without deleting it. The pile always wins; plan for it." },
+          "labels": { "type": "union", "refs": ["com.atproto.label.defs#selfLabels"] },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

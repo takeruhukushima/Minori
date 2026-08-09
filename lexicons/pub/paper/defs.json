@@ -1,0 +1,76 @@
+{
+  "lexicon": 1,
+  "id": "pub.paper.defs",
+  "description": "Shared object definitions for bibliographic records. Field names and semantics deliberately mirror CSL-JSON so that records round-trip losslessly to CSL-JSON, and from there to BibTeX/biblatex, RIS, and any CSL style.",
+  "defs": {
+    "contributor": {
+      "type": "object",
+      "description": "One contributor to a work. Mirrors a CSL-JSON name object, plus atproto-native identity fields. Either the structured name fields or `literal` must be present, never both.",
+      "required": ["role"],
+      "properties": {
+        "role": {
+          "type": "string",
+          "knownValues": ["author", "editor", "translator", "chair", "collection-editor", "composer", "container-author", "director", "illustrator", "interviewer", "original-author", "recipient", "reviewed-author"]
+        },
+        "family": { "type": "string", "maxLength": 640, "maxGraphemes": 64, "description": "Family name. For CJK names, the surname (e.g. 山田)." },
+        "given": { "type": "string", "maxLength": 640, "maxGraphemes": 64, "description": "Given name(s). For CJK names, the personal name (e.g. 太郎)." },
+        "suffix": { "type": "string", "maxLength": 320, "maxGraphemes": 32 },
+        "droppingParticle": { "type": "string", "maxLength": 320, "maxGraphemes": 32, "description": "Particle dropped when the given name is omitted, e.g. 'van' in 'Ludwig van Beethoven'." },
+        "nonDroppingParticle": { "type": "string", "maxLength": 320, "maxGraphemes": 32, "description": "Particle retained when the given name is omitted, e.g. 'de' in 'Charles de Gaulle'." },
+        "literal": { "type": "string", "maxLength": 1280, "maxGraphemes": 128, "description": "Unstructured name, for organisations or mononyms. Use INSTEAD OF family/given." },
+        "latinized": { "type": "string", "maxLength": 640, "maxGraphemes": 64, "description": "Romanised form, for CJK authors cited in Latin script." },
+        "did": { "type": "string", "format": "did", "description": "atproto DID of this contributor, when known. Lets an AppView link a citation to a live account." },
+        "orcid": { "type": "string", "maxLength": 32, "description": "Bare ORCID iD, e.g. '0000-0002-1825-0097'. No https://orcid.org/ prefix." },
+        "sequence": { "type": "integer", "minimum": 1, "description": "1-based position within this role's list. Required for correct BibTeX output if a client reorders the array." },
+        "equalContribution": { "type": "boolean" },
+        "corresponding": { "type": "boolean" }
+      }
+    },
+    "date": {
+      "type": "object",
+      "description": "CSL-JSON-compatible date. Deliberately NOT an ISO datetime: bibliographic dates are routinely partial ('2019'), approximate ('ca. 1750'), ranged, or non-numeric ('in press').",
+      "properties": {
+        "year": { "type": "integer", "description": "Negative for BCE." },
+        "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "day": { "type": "integer", "minimum": 1, "maximum": 31 },
+        "endYear": { "type": "integer" },
+        "endMonth": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "endDay": { "type": "integer", "minimum": 1, "maximum": 31 },
+        "season": { "type": "string", "knownValues": ["spring", "summer", "autumn", "winter"] },
+        "circa": { "type": "boolean" },
+        "literal": { "type": "string", "maxLength": 200, "description": "Non-numeric date rendered verbatim: 'in press', 'forthcoming', 'n.d.'. Set INSTEAD OF year." }
+      }
+    },
+    "identifier": {
+      "type": "object",
+      "description": "Persistent identifier. DOI/arXiv/ISBN etc. have dedicated record fields; use this for the long tail.",
+      "required": ["scheme", "value"],
+      "properties": {
+        "scheme": {
+          "type": "string",
+          "knownValues": ["handle", "openalex", "semanticScholar", "dblp", "swhid", "ark", "urn", "ncid", "naid", "jglobal", "ssrn", "biorxiv", "osf", "rrid"],
+          "description": "'ncid'/'naid' are CiNii identifiers, 'jglobal' is J-GLOBAL. Included because Japanese-language scholarship is poorly covered by DOI."
+        },
+        "value": { "type": "string", "maxLength": 512 }
+      }
+    },
+    "sourceInfo": {
+      "type": "object",
+      "description": "Provenance of the metadata, so an AppView can distinguish curated records from bulk imports and refresh stale ones.",
+      "properties": {
+        "provider": { "type": "string", "knownValues": ["manual", "crossref", "datacite", "arxiv", "openalex", "pubmed", "semanticScholar", "zotero", "bibtexImport", "risImport", "cinii", "publisher"] },
+        "providerRecordId": { "type": "string", "maxLength": 512 },
+        "retrievedAt": { "type": "string", "format": "datetime" }
+      }
+    },
+    "bibtexField": {
+      "type": "object",
+      "description": "ESCAPE HATCH. A raw biblatex field/value pair with no CSL equivalent. Use sparingly: values here are opaque to every non-LaTeX consumer, and stored LaTeX escaping renders as garbage elsewhere. Frequent use means the schema is missing a field -- open an issue instead.",
+      "required": ["field", "value"],
+      "properties": {
+        "field": { "type": "string", "maxLength": 64 },
+        "value": { "type": "string", "maxLength": 4096 }
+      }
+    }
+  }
+}

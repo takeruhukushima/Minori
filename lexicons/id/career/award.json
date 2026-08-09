@@ -1,0 +1,31 @@
+{
+  "lexicon": 1,
+  "id": "id.career.award",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A prize, honour, or competitive distinction. Separate from id.career.grant because an award recognises past work while a grant funds future work, and CVs list them in different sections with different sort orders.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["name", "createdAt"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 1000, "maxGraphemes": 200, "description": "Award name as it should be printed, e.g. 'Best Paper Award', '日本学術振興会 育志賞'." },
+          "conferredBy": { "type": "ref", "ref": "id.career.defs#organization", "description": "Awarding body: society, conference, institution, or government." },
+          "date": { "type": "string", "maxLength": 10, "description": "YYYY, YYYY-MM, or YYYY-MM-DD." },
+          "category": { "type": "string", "maxLength": 500, "maxGraphemes": 100, "description": "Sub-category, e.g. 'Student track', '若手奨励賞'." },
+          "scope": { "type": "ref", "ref": "id.career.defs#scope" },
+          "forWork": { "type": "ref", "ref": "com.atproto.repo.strongRef", "description": "StrongRef to the pub.paper.reference that was recognised, for paper awards." },
+          "forPresentation": { "type": "ref", "ref": "com.atproto.repo.strongRef", "description": "StrongRef to the id.career.presentation that was recognised, for best-poster and best-talk awards." },
+          "amount": { "type": "ref", "ref": "id.career.defs#money", "description": "Prize money, where it is publicly known and the recipient wishes to state it." },
+          "coRecipients": { "type": "array", "maxLength": 50, "items": { "type": "ref", "ref": "id.career.defs#personRef" } },
+          "selectionPool": { "type": "string", "maxLength": 200, "description": "Selectivity as stated by the awarding body, e.g. '1 of 480 submissions'. Never computed, only quoted." },
+          "description": { "type": "string", "maxLength": 5000, "maxGraphemes": 1000 },
+          "url": { "type": "string", "format": "uri" },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

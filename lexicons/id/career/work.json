@@ -1,0 +1,37 @@
+{
+  "lexicon": 1,
+  "id": "id.career.work",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A scholarly output that is neither a publication nor software: a policy recommendation, committee report, database, teaching material, artwork, exhibition, performance, or design (researchmap Works/作品等). BOUNDARY WITH id.career.openSourceContribution: if the output has a source repository or package registry entry, use openSourceContribution, which has the fields for it. If it does not, use this. The two are kept separate rather than merged because software carries repo/package/license fields that would be dead weight on an exhibition record, and exhibitions carry venue/period fields that are meaningless for a library.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["title", "createdAt"],
+        "properties": {
+          "title": { "type": "string", "maxLength": 3000, "maxGraphemes": 300 },
+          "kind": {
+            "type": "string",
+            "knownValues": ["policyRecommendation", "committeeReport", "whitePaper", "database", "teachingMaterial", "textbook", "artwork", "exhibition", "performance", "composition", "design", "architecture", "film", "standard", "translation", "guideline", "protocol", "other"],
+            "description": "'policyRecommendation' covers 提言 and 'committeeReport' covers 報告, which are formal, citable output types of Japanese academic bodies with no Anglophone equivalent."
+          },
+          "role": { "type": "string", "maxLength": 500, "maxGraphemes": 100, "description": "Free text rather than an enum: roles here range across authorship, curation, performance, and design, and no closed vocabulary survives contact with all of them." },
+          "organization": { "type": "ref", "ref": "id.career.defs#organization", "description": "Issuing body, commissioning organisation, or venue." },
+          "coCreators": { "type": "array", "maxLength": 100, "items": { "type": "ref", "ref": "id.career.defs#personRef" } },
+          "startedAt": { "type": "string", "maxLength": 10, "description": "YYYY, YYYY-MM, or YYYY-MM-DD. For a one-off release or opening, set this and leave endedAt empty." },
+          "endedAt": { "type": "string", "maxLength": 10 },
+          "place": { "type": "string", "maxLength": 500, "maxGraphemes": 100 },
+          "scope": { "type": "ref", "ref": "id.career.defs#scope" },
+          "description": { "type": "string", "maxLength": 10000, "maxGraphemes": 2000 },
+          "doi": { "type": "string", "maxLength": 512, "description": "Bare DOI. Datasets and reports increasingly have one, which makes them properly citable." },
+          "url": { "type": "string", "format": "uri" },
+          "license": { "type": "string", "maxLength": 200, "description": "SPDX identifier or licence URL." },
+          "relatedWork": { "type": "ref", "ref": "com.atproto.repo.strongRef", "description": "StrongRef to a pub.paper.reference describing or citing this output." },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

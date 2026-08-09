@@ -1,0 +1,169 @@
+{
+  "lexicon": 1,
+  "id": "id.career.authorship",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A claim by this account holder that they contributed to a specific work. THIS IS THE ONLY BRIDGE between the CV namespace and the bibliography namespace, and the central design decision of both: because bibliographic metadata (pub.paper.reference) is separated from the authorship claim, a reference has exactly one shape whether it is your paper or someone else's, nothing is stored twice, and the claim itself becomes an independently attestable object (see id.career.attestation). A claim here is self-asserted and unverified by construction; verification is an AppView concern, computed from Crossref/ORCID agreement and from third-party attestations.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": [
+          "reference",
+          "createdAt"
+        ],
+        "properties": {
+          "reference": {
+            "type": "ref",
+            "ref": "com.atproto.repo.strongRef",
+            "description": "StrongRef to a pub.paper.reference record, normally one in this same repo."
+          },
+          "role": {
+            "type": "string",
+            "knownValues": [
+              "author",
+              "editor",
+              "translator",
+              "contributor",
+              "dataProvider",
+              "softwareAuthor",
+              "principalInvestigator"
+            ]
+          },
+          "authorPosition": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based position in the author list."
+          },
+          "totalAuthors": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Stored so 'N of M' can be rendered without loading the full reference."
+          },
+          "isFirstAuthor": {
+            "type": "boolean"
+          },
+          "isLastAuthor": {
+            "type": "boolean",
+            "description": "Separate from position because in the life sciences last authorship denotes seniority, not order."
+          },
+          "isCorresponding": {
+            "type": "boolean"
+          },
+          "equalContribution": {
+            "type": "boolean",
+            "description": "Part of a co-first or co-equal group (the '*' footnote)."
+          },
+          "peerReviewStatus": {
+            "type": "string",
+            "knownValues": [
+              "peerReviewed",
+              "editorialReview",
+              "preprint",
+              "underReview",
+              "inPress",
+              "notPeerReviewed",
+              "retracted",
+              "withdrawn"
+            ],
+            "description": "Kept here rather than on the reference because review status is a property of this account's relationship to the work at a point in time, and because different CV formats sort by it. WARNING: 'underReview' reveals that a manuscript is out and often implies where; consider omitting the record entirely until acceptance rather than relying on `disclosure`."
+          },
+          "venueType": {
+            "type": "string",
+            "knownValues": [
+              "journal",
+              "conference",
+              "workshop",
+              "book",
+              "bookChapter",
+              "preprintServer",
+              "thesis",
+              "technicalReport",
+              "dataset",
+              "softwareRegistry",
+              "magazine",
+              "proceedingsAbstract",
+              "bulletin",
+              "commentary",
+              "newsletter"
+            ],
+            "description": "'proceedingsAbstract' is a 予稿集 abstract, 'bulletin' is a 紀要 (institutional journal), and 'commentary' is a 解説記事. All three are ubiquitous in Japanese CVs, are usually filed under MISC, and have no place in the international venue vocabularies."
+          },
+          "scope": {
+            "type": "ref",
+            "ref": "id.career.defs#scope",
+            "description": "国際/国内 distinction, required by many Japanese and tenure-track reporting formats."
+          },
+          "invited": {
+            "type": "boolean"
+          },
+          "acceptanceRate": {
+            "type": "string",
+            "maxLength": 16,
+            "description": "Venue acceptance rate as printed, e.g. '18.4%'. Conventional in computer science CVs, meaningless elsewhere -- optional and never inferred."
+          },
+          "authorNameUsed": {
+            "type": "string",
+            "maxLength": 640,
+            "maxGraphemes": 64,
+            "description": "The name form under which this work was published, when it differs from the current profile name (name changes, romanisation variants). Essential for disambiguation."
+          },
+          "disclosure": {
+            "type": "string",
+            "knownValues": [
+              "public",
+              "unlisted"
+            ],
+            "description": "ADVISORY ONLY, NOT PRIVACY. atproto records are public; 'unlisted' merely asks well-behaved clients to omit this from default CV renders. Anything that must stay secret must not be written to a PDS at all."
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 4000,
+            "maxGraphemes": 800
+          },
+          "labels": {
+            "type": "union",
+            "refs": [
+              "com.atproto.label.defs#selfLabels"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "outputCategory": {
+            "type": "string",
+            "knownValues": [
+              "article",
+              "misc",
+              "book",
+              "other"
+            ],
+            "description": "Which CV section this output belongs in. THIS IS AUTHOR-DECLARED AND NOT DERIVABLE from the reference's type or venue. researchmap splits outputs into 論文 / MISC / 書籍等出版物, and where a given item lands is a judgement the author makes: a Japanese-language 解説 in a society journal, a conference 予稿集 abstract, and a translated review all sit in MISC for one researcher and in 論文 for another. Any system that infers this will silently misfile hundreds of records -- this profile has 171 論文 against 336 MISC."
+          },
+          "contributionType": {
+            "type": "string",
+            "knownValues": [
+              "sole",
+              "joint",
+              "edited",
+              "chapterContribution",
+              "translation",
+              "supervision",
+              "commentary"
+            ],
+            "description": "Nature of the contribution to a book or edited volume, matching the researchmap 担当 vocabulary: 単著 / 共著 / 編者 / 分担執筆 / 翻訳 / 監修. Required for book records, meaningless for journal articles. 'supervision' is 監修, a credited role in Japanese publishing with no direct English equivalent."
+          },
+          "isFeatured": {
+            "type": "boolean",
+            "description": "Marked by the author as a principal work (researchmap 主要な業績). Lets a dossier render a 'selected publications' section without a second curated list going stale alongside the full one."
+          }
+        }
+      }
+    }
+  }
+}

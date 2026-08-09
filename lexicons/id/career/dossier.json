@@ -1,0 +1,91 @@
+{
+  "lexicon": 1,
+  "id": "id.career.dossier",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A named rendering of the account holder's CV: which sections, in what order, drawn from which collections, filtered and sorted how. Researchers do not have one CV -- they keep a fellowship version, a faculty-application version, an industry resume, a Japanese 業績票, and a two-line bio, all from the same underlying facts. Making the VIEW a record rather than baking one layout into the app means all of them regenerate from one record set. Because `sectionSpec.source` is an NSID string, a dossier can pull employment history from id.sifa.profile.position alongside sections from this namespace.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": [
+          "name",
+          "sections",
+          "createdAt"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 500,
+            "maxGraphemes": 100,
+            "description": "e.g. 'Academic CV (EN)', '業績一覧 2026年度'."
+          },
+          "purpose": {
+            "type": "string",
+            "knownValues": [
+              "academicCv",
+              "industryResume",
+              "tenureFile",
+              "grantApplication",
+              "facultyApplication",
+              "researchmapExport",
+              "kakenhiApplication",
+              "publicProfile",
+              "shortBio",
+              "annualReport"
+            ]
+          },
+          "locale": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "BCP-47 tag for headings, date formatting, and name ordering. The single field that makes a bilingual CV possible from one record set."
+          },
+          "sections": {
+            "type": "array",
+            "maxLength": 40,
+            "items": {
+              "type": "ref",
+              "ref": "id.career.defs#sectionSpec"
+            }
+          },
+          "cslStyle": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "CSL style for rendering the publication sections, e.g. 'apa', 'ieee'."
+          },
+          "includeUnlisted": {
+            "type": "boolean",
+            "description": "Whether to include records whose `disclosure` is 'unlisted'. Useful for a private full CV rendered locally."
+          },
+          "highlightSelf": {
+            "type": "boolean",
+            "description": "Bold or underline the profile owner's name in author lists, expected by most application formats."
+          },
+          "headerNote": {
+            "type": "string",
+            "maxLength": 5000,
+            "maxGraphemes": 1000,
+            "description": "Free text placed above the first section, e.g. a research statement summary."
+          },
+          "templateUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Optional LaTeX or Typst template the renderer should use."
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "Which dossier a public profile page renders. At most one should be true; consumers seeing several should pick the most recently updated."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    }
+  }
+}

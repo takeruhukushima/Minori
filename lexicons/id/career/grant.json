@@ -1,0 +1,167 @@
+{
+  "lexicon": 1,
+  "id": "id.career.grant",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "Competitive funding: a grant, fellowship, or contract. Both awarded and unsuccessful applications can be represented, but note that writing an unsuccessful application to a public PDS discloses it -- if you do not want it known, do not create the record.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": [
+          "title",
+          "funder",
+          "createdAt"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 3000,
+            "maxGraphemes": 300,
+            "description": "Project title as submitted."
+          },
+          "funder": {
+            "type": "ref",
+            "ref": "id.career.defs#organization",
+            "description": "Funding body. ROR strongly preferred: funder name strings are notoriously inconsistent across a career."
+          },
+          "programName": {
+            "type": "string",
+            "maxLength": 1000,
+            "maxGraphemes": 200,
+            "description": "e.g. '科学研究費助成事業 基盤研究(C)', 'ERC Starting Grant'."
+          },
+          "awardNumber": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "Grant number, e.g. '23K12345'. The de facto identifier and what acknowledgements sections cite."
+          },
+          "role": {
+            "type": "string",
+            "knownValues": [
+              "pi",
+              "coPi",
+              "coInvestigator",
+              "fellow",
+              "collaborator",
+              "consultant",
+              "hostResearcher",
+              "researchAssistant",
+              "areaLeader"
+            ],
+            "description": "'hostResearcher' is 受入研究者, a formally recognised role on Japanese fellowships with no Anglophone equivalent."
+          },
+          "status": {
+            "type": "string",
+            "knownValues": [
+              "awarded",
+              "active",
+              "completed",
+              "submitted",
+              "underReview",
+              "notFunded",
+              "declined",
+              "transferred"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "maxLength": 10,
+            "description": "YYYY, YYYY-MM, or YYYY-MM-DD."
+          },
+          "endedAt": {
+            "type": "string",
+            "maxLength": 10
+          },
+          "totalAmount": {
+            "type": "ref",
+            "ref": "id.career.defs#money",
+            "description": "Total award to the whole project."
+          },
+          "shareAmount": {
+            "type": "ref",
+            "ref": "id.career.defs#money",
+            "description": "The portion allocated to this person. Distinguishing the two is required by most tenure and promotion files."
+          },
+          "amountDisclosure": {
+            "type": "string",
+            "knownValues": [
+              "public",
+              "withheld"
+            ],
+            "description": "ADVISORY ONLY. Set to 'withheld' AND omit the amount fields if the figure should not be shown -- a value present in the record is public regardless of this flag."
+          },
+          "hostInstitution": {
+            "type": "ref",
+            "ref": "id.career.defs#organization"
+          },
+          "collaborators": {
+            "type": "array",
+            "maxLength": 100,
+            "items": {
+              "type": "ref",
+              "ref": "id.career.defs#personRef"
+            }
+          },
+          "fieldCodes": {
+            "type": "array",
+            "maxLength": 10,
+            "items": {
+              "type": "ref",
+              "ref": "id.career.defs#fieldCode"
+            }
+          },
+          "outputs": {
+            "type": "array",
+            "maxLength": 100,
+            "items": {
+              "type": "ref",
+              "ref": "com.atproto.repo.strongRef"
+            },
+            "description": "StrongRefs to pub.paper.reference records produced under this grant. Makes reporting obligations answerable from the record set."
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Public award page, e.g. a KAKEN project URL."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "fundingType": {
+            "type": "string",
+            "knownValues": [
+              "kakenhi",
+              "amed",
+              "jst",
+              "nedo",
+              "ministry",
+              "foundation",
+              "contractResearch",
+              "jointResearch",
+              "donation",
+              "internalFunding",
+              "industryFunded",
+              "international"
+            ],
+            "description": "Funding instrument. researchmap files 共同研究 and 競争的資金 in one section but they are different animals: 'contractResearch' (企業からの受託研究) and 'jointResearch' (共同研究) are commissioned work, not competitive awards, and evaluation committees weigh them differently. 'donation' is 寄附金."
+          },
+          "partnerOrganizations": {
+            "type": "array",
+            "maxLength": 30,
+            "items": {
+              "type": "ref",
+              "ref": "id.career.defs#organization"
+            },
+            "description": "Participating institutions and companies. Separate from `collaborators`, which is people: a contract research project lists 株式会社クラレ and 国立国際医療研究センター as parties, and forcing an organisation into a personRef loses its ROR."
+          }
+        }
+      }
+    }
+  }
+}

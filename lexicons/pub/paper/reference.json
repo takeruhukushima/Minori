@@ -1,0 +1,277 @@
+{
+  "lexicon": 1,
+  "id": "pub.paper.reference",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "One bibliographic reference in a user's library. Describes SOMEONE'S work (possibly the account holder's, possibly not) and makes no claim of authorship -- authorship claims live in id.career.authorship, so this lexicon stays useful to people who only manage citations. Duplicates across accounts are expected and correct: each user owns their copy. An AppView clusters copies into works by normalised DOI.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": [
+          "type",
+          "title",
+          "createdAt"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "CSL item type. Determines which fields are meaningful and which BibTeX entry type is emitted. Kept strictly to the CSL vocabulary: Japanese output categories such as 予稿集, 紀要, and 解説 are NOT added here, because they describe where an item sits in a CV rather than what kind of thing it is. That routing lives in id.career.authorship (outputCategory and venueType), which keeps this lexicon usable by anyone rendering a citation.",
+            "knownValues": [
+              "article-journal",
+              "paper-conference",
+              "chapter",
+              "book",
+              "thesis",
+              "report",
+              "preprint",
+              "dataset",
+              "software",
+              "patent",
+              "webpage",
+              "manuscript",
+              "article-magazine",
+              "article-newspaper",
+              "speech",
+              "entry-encyclopedia",
+              "standard",
+              "review",
+              "document"
+            ]
+          },
+          "citeKey": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "Stable citation key, e.g. 'yamada2024diffusion'. Stored, not derived: a regenerated key silently breaks every \\cite{} in every manuscript that used it. Treat as immutable once set. Unique per account by convention, not by protocol."
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 3000,
+            "maxGraphemes": 300
+          },
+          "shortTitle": {
+            "type": "string",
+            "maxLength": 600,
+            "maxGraphemes": 60
+          },
+          "originalTitle": {
+            "type": "string",
+            "maxLength": 3000,
+            "maxGraphemes": 300,
+            "description": "Title in the original language when `title` holds a translation. Common for Japanese-language work cited in an English CV."
+          },
+          "contributors": {
+            "type": "array",
+            "maxLength": 2000,
+            "description": "All contributors in all roles, in order. maxLength is generous because particle physics and genomics papers routinely list over a thousand authors.",
+            "items": {
+              "type": "ref",
+              "ref": "pub.paper.defs#contributor"
+            }
+          },
+          "issued": {
+            "type": "ref",
+            "ref": "pub.paper.defs#date"
+          },
+          "accessed": {
+            "type": "ref",
+            "ref": "pub.paper.defs#date"
+          },
+          "containerTitle": {
+            "type": "string",
+            "maxLength": 1000,
+            "maxGraphemes": 100,
+            "description": "Journal name, proceedings title, or book title for a chapter."
+          },
+          "containerTitleShort": {
+            "type": "string",
+            "maxLength": 400,
+            "maxGraphemes": 40,
+            "description": "Abbreviated journal name (ISO 4), e.g. 'J. Chem. Phys.'. Many venues require it and machine derivation from the full name is unreliable, so store both."
+          },
+          "collectionTitle": {
+            "type": "string",
+            "maxLength": 1000,
+            "maxGraphemes": 100,
+            "description": "Series title, e.g. 'Lecture Notes in Computer Science'."
+          },
+          "collectionNumber": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "publisher": {
+            "type": "string",
+            "maxLength": 1000,
+            "maxGraphemes": 100
+          },
+          "publisherPlace": {
+            "type": "string",
+            "maxLength": 500,
+            "maxGraphemes": 50
+          },
+          "volume": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "String, not integer: volumes like '12A' and '3-4' exist."
+          },
+          "issue": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "page": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "Page range as printed, e.g. '331--345' or 'e0158393'."
+          },
+          "numberOfPages": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "edition": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "chapterNumber": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "version": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "For software and datasets, e.g. 'v2.1.0'."
+          },
+          "number": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "Report, patent, or standard number."
+          },
+          "genre": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Sub-type rendered verbatim: 'PhD thesis', 'Technical report', '修士論文'."
+          },
+          "event": {
+            "type": "string",
+            "maxLength": 1000,
+            "maxGraphemes": 100,
+            "description": "Conference name when different from containerTitle."
+          },
+          "eventPlace": {
+            "type": "string",
+            "maxLength": 500,
+            "maxGraphemes": 50
+          },
+          "eventDate": {
+            "type": "ref",
+            "ref": "pub.paper.defs#date"
+          },
+          "doi": {
+            "type": "string",
+            "maxLength": 512,
+            "description": "Bare DOI, e.g. '10.1371/journal.pone.0158393'. No https://doi.org/ prefix. Lowercase for indexing."
+          },
+          "arxivId": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "e.g. '2402.03239' or '2402.03239v3'."
+          },
+          "pmid": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "pmcid": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "isbn": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "issn": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "openAccessUrl": {
+            "type": "string",
+            "format": "uri",
+            "description": "Direct link to freely readable full text, when one exists and differs from `url`."
+          },
+          "identifiers": {
+            "type": "array",
+            "maxLength": 20,
+            "items": {
+              "type": "ref",
+              "ref": "pub.paper.defs#identifier"
+            }
+          },
+          "work": {
+            "type": "string",
+            "format": "at-uri",
+            "description": "Optional AT-URI of a richer record for the same work elsewhere in the network, e.g. a pub.oxa.* scientific document. Lets the library point at first-class content instead of duplicating it."
+          },
+          "abstract": {
+            "type": "string",
+            "maxLength": 20000,
+            "maxGraphemes": 5000
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 4000,
+            "maxGraphemes": 1000,
+            "description": "Bibliographic note belonging in the citation itself (BibTeX `note`). Personal commentary goes in pub.paper.readingStatus."
+          },
+          "language": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "BCP-47 tag of the work itself, e.g. 'ja', 'en'."
+          },
+          "keywords": {
+            "type": "array",
+            "maxLength": 50,
+            "items": {
+              "type": "string",
+              "maxLength": 200,
+              "maxGraphemes": 40
+            }
+          },
+          "license": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "SPDX identifier or licence URL, where known."
+          },
+          "source": {
+            "type": "ref",
+            "ref": "pub.paper.defs#sourceInfo"
+          },
+          "bibtexExtra": {
+            "type": "array",
+            "maxLength": 20,
+            "items": {
+              "type": "ref",
+              "ref": "pub.paper.defs#bibtexField"
+            }
+          },
+          "labels": {
+            "type": "union",
+            "refs": [
+              "com.atproto.label.defs#selfLabels"
+            ],
+            "description": "Self-labels. Relevant for references to retracted or contested work."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "datetime"
+          }
+        }
+      }
+    }
+  }
+}

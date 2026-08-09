@@ -1,0 +1,37 @@
+{
+  "lexicon": 1,
+  "id": "pub.paper.collection",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A named set of references: a manuscript in progress, a reading list, a syllabus, a systematic review screening set. Membership is NOT stored here -- it lives in pub.paper.collectionItem. Embedding an item array would hit the 1MB record ceiling on any real bibliography and would force a full rewrite on every add.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["name", "createdAt"],
+        "properties": {
+          "name": { "type": "string", "maxLength": 640, "maxGraphemes": 128 },
+          "description": { "type": "string", "maxLength": 10000, "maxGraphemes": 2000 },
+          "purpose": {
+            "type": "string",
+            "description": "Drives client affordances: a 'writing' collection shows citekeys and a .bib export button; a 'reading' collection shows status and priority.",
+            "knownValues": ["writing", "reading", "teaching", "topic", "systematicReview", "grantApplication", "journalClub", "thesis"]
+          },
+          "targetVenue": { "type": "string", "maxLength": 500, "maxGraphemes": 100, "description": "Journal or conference being targeted. Lets a client pick the CSL style and journal-abbreviation policy automatically." },
+          "cslStyle": { "type": "string", "maxLength": 200, "description": "CSL style identifier, e.g. 'apa', 'ieee', 'nature'." },
+          "deadline": { "type": "string", "format": "datetime" },
+          "manuscript": { "type": "string", "format": "at-uri", "description": "Optional AT-URI of the document this bibliography belongs to." },
+          "repository": { "type": "string", "format": "uri", "description": "Optional link to the manuscript's source repository (Tangled, GitHub, ...)." },
+          "collaborators": {
+            "type": "array",
+            "maxLength": 100,
+            "description": "DIDs of co-authors on this collection. Advisory only: atproto has no cross-repo write, so each collaborator maintains their own records and an AppView merges them into a shared view.",
+            "items": { "type": "string", "format": "did" }
+          },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

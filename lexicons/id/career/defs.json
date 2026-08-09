@@ -1,0 +1,261 @@
+{
+  "lexicon": 1,
+  "id": "id.career.defs",
+  "description": "Shared object definitions for academic CV records. Date shapes and organisation-reference conventions deliberately mirror id.sifa.* so that records from both namespaces can be merged into one profile without translation.",
+  "defs": {
+    "organization": {
+      "type": "object",
+      "description": "Reference to an institution, funder, publisher, or society. NEVER key on `name`: it is a display string that varies by language, era, and abbreviation. Identity comes from `ror` or `wikidata`. Mirrors the id.sifa.* entityRef convention.",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 1000,
+          "maxGraphemes": 100,
+          "description": "Display name in the record's locale. Not an identifier."
+        },
+        "ror": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Bare ROR ID, e.g. '03vek6s52'. Preferred identifier for research organisations and funders."
+        },
+        "wikidata": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Wikidata Q-ID, e.g. 'Q13371'. Use when no ROR exists (companies, societies, prizes)."
+        },
+        "isni": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "department": {
+          "type": "string",
+          "maxLength": 1000,
+          "maxGraphemes": 100,
+          "description": "Faculty, department, or lab. Free text: departmental identifiers are not standardised."
+        },
+        "country": {
+          "type": "string",
+          "maxLength": 2,
+          "description": "ISO 3166-1 alpha-2."
+        },
+        "url": {
+          "type": "string",
+          "format": "uri"
+        }
+      }
+    },
+    "personRef": {
+      "type": "object",
+      "description": "Reference to another person -- an advisor, co-presenter, student, or co-recipient. PRIVACY: prefer `did` or `orcid`. Do not populate `name` for a person who has not consented to appearing in this account's public records. This matters most for students (see id.career.supervision).",
+      "properties": {
+        "did": {
+          "type": "string",
+          "format": "did"
+        },
+        "orcid": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Bare ORCID iD."
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 640,
+          "maxGraphemes": 64,
+          "description": "Display name. Requires the person's consent when they are not a public co-author of a published work."
+        },
+        "affiliation": {
+          "type": "ref",
+          "ref": "id.career.defs#organization",
+          "description": "Affiliation at the relevant time, not necessarily their current one."
+        }
+      }
+    },
+    "scope": {
+      "type": "string",
+      "description": "Geographic reach. Japanese 業績票 and many tenure files require 国際/国内 to be distinguished, so it is a first-class field rather than something inferred from the venue name.",
+      "knownValues": [
+        "international",
+        "national",
+        "regional",
+        "institutional",
+        "departmental"
+      ]
+    },
+    "fieldCode": {
+      "type": "object",
+      "description": "Research field under a controlled vocabulary, so profiles are searchable across languages.",
+      "required": [
+        "scheme",
+        "code"
+      ],
+      "properties": {
+        "scheme": {
+          "type": "string",
+          "knownValues": [
+            "kakenhi",
+            "researchmap",
+            "jglobal",
+            "oecdFos",
+            "msc",
+            "acmCcs",
+            "arxivCategory",
+            "scopusAsjc",
+            "nihSpendingCategory"
+          ],
+          "description": "'kakenhi' is the JSPS 審査区分 / 分科細目 table. 'researchmap' is researchmap's own hierarchical 研究分野 vocabulary, e.g. 'ものづくり技術（機械・電気電子・化学工学） / バイオ機能応用、バイオプロセス工学' -- stored as a scheme rather than free text because it is a controlled list that Japanese systems match on exactly."
+        },
+        "code": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 500,
+          "maxGraphemes": 100
+        }
+      }
+    },
+    "money": {
+      "type": "object",
+      "description": "A monetary amount. `value` is a decimal STRING, not a number: JSON floats lose precision on large yen figures and lexicon has no decimal type.",
+      "required": [
+        "value",
+        "currency"
+      ],
+      "properties": {
+        "value": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Decimal digits with optional '.', no thousands separators, e.g. '39000000'."
+        },
+        "currency": {
+          "type": "string",
+          "maxLength": 3,
+          "description": "ISO 4217, e.g. 'JPY', 'USD'."
+        }
+      }
+    },
+    "webLink": {
+      "type": "object",
+      "required": [
+        "url"
+      ],
+      "properties": {
+        "url": {
+          "type": "string",
+          "format": "uri"
+        },
+        "label": {
+          "type": "string",
+          "maxLength": 300,
+          "maxGraphemes": 60
+        }
+      }
+    },
+    "languageSkill": {
+      "type": "object",
+      "required": [
+        "tag"
+      ],
+      "properties": {
+        "tag": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "BCP-47, e.g. 'ja', 'en-GB'."
+        },
+        "proficiency": {
+          "type": "string",
+          "knownValues": [
+            "native",
+            "fluent",
+            "professional",
+            "intermediate",
+            "basic"
+          ]
+        }
+      }
+    },
+    "sectionSpec": {
+      "type": "object",
+      "description": "One section of a rendered CV. `source` is an NSID string rather than an enum so a dossier can pull in records from namespaces this lexicon does not own -- notably id.sifa.profile.position for employment history.",
+      "required": [
+        "source",
+        "order"
+      ],
+      "properties": {
+        "source": {
+          "type": "string",
+          "format": "nsid",
+          "description": "Collection NSID to draw from, e.g. 'id.career.grant' or 'id.sifa.profile.position'."
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 500,
+          "maxGraphemes": 100,
+          "description": "Heading text in the dossier's locale, e.g. 'Publications' or '研究業績'."
+        },
+        "order": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sortBy": {
+          "type": "string",
+          "knownValues": [
+            "dateDesc",
+            "dateAsc",
+            "manual",
+            "alphabetical",
+            "scopeThenDate"
+          ]
+        },
+        "groupBy": {
+          "type": "string",
+          "knownValues": [
+            "none",
+            "year",
+            "type",
+            "role",
+            "scope",
+            "venueType"
+          ]
+        },
+        "sinceYear": {
+          "type": "integer",
+          "description": "Omit entries older than this. Common for 'selected publications' or 'last 5 years' funding sections."
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "includeTypes": {
+          "type": "array",
+          "maxLength": 30,
+          "items": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "description": "Filter on the source record's `type`/`role` enum, e.g. only ['invited','keynote'] for a selected-talks section."
+        },
+        "excludeTypes": {
+          "type": "array",
+          "maxLength": 30,
+          "items": {
+            "type": "string",
+            "maxLength": 64
+          }
+        },
+        "numbered": {
+          "type": "boolean",
+          "description": "Render as a numbered list. Japanese 業績票 and tenure files usually require numbering."
+        },
+        "reverseNumbering": {
+          "type": "boolean",
+          "description": "Number from N down to 1, the common convention for reverse-chronological publication lists."
+        }
+      }
+    }
+  }
+}

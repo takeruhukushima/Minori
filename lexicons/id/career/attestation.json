@@ -1,0 +1,29 @@
+{
+  "lexicon": 1,
+  "id": "id.career.attestation",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "A third-party statement vouching for someone else's CV record, written to the ATTESTER's repo and pointing at a record in the SUBJECT's repo. This is the answer to the problem every CV system has: self-asserted credentials are unverifiable. A co-author confirming an authorship claim, a supervisor confirming a supervision record, or an institution confirming a position produces a signed, independently hosted counter-signature -- with no central registry, and something ORCID structurally cannot do. Follows the id.sifa.org.employmentAttestation pattern: the strongRef pins the target's CID, so any edit to the target silently voids the attestation, and organisation identity comes from a ROR/Wikidata URI rather than a name string.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["subject", "target", "type", "createdAt"],
+        "properties": {
+          "subject": { "type": "string", "format": "did", "description": "DID of the person whose record is being attested." },
+          "target": { "type": "ref", "ref": "com.atproto.repo.strongRef", "description": "StrongRef to the record being attested. The CID pins the exact version: if the subject edits the record afterwards, consumers MUST treat this attestation as void rather than as applying to the new content." },
+          "targetCollection": { "type": "string", "format": "nsid", "description": "NSID of the target record's collection, snapshotted so a consumer can apply the right validation rules without dereferencing." },
+          "type": { "type": "string", "knownValues": ["authorship", "employment", "education", "supervision", "service", "presentation", "award", "grant", "openSourceContribution", "generic"] },
+          "relationship": { "type": "string", "knownValues": ["coAuthor", "supervisor", "supervisee", "colleague", "employer", "institution", "funder", "organizer", "editor", "committeeMember", "collaborator"], "description": "How the attester knows. A co-author confirming co-authorship carries different weight from a colleague confirming it, and consumers should be able to tell." },
+          "assertion": { "type": "string", "knownValues": ["confirms", "confirmsWithCorrection", "disputes"], "description": "'disputes' is included on purpose. An attestation layer that can only affirm is a reputation system, not a verification system." },
+          "entityRef": { "type": "string", "format": "uri", "description": "Wikidata Q-ID, ROR, or LEI URI of the attesting organisation, when the attester writes on an institution's behalf. Mirrors the id.sifa.* convention: never pin a free-text organisation name." },
+          "attesterRole": { "type": "string", "maxLength": 500, "maxGraphemes": 100, "description": "The attester's role at the time, e.g. 'Department Head', 'corresponding author'." },
+          "statement": { "type": "string", "maxLength": 3000, "maxGraphemes": 600, "description": "Optional short comment. Not a letter of recommendation: this layer verifies facts, it does not evaluate people." },
+          "validFrom": { "type": "string", "format": "datetime" },
+          "labels": { "type": "union", "refs": ["com.atproto.label.defs#selfLabels"] },
+          "createdAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

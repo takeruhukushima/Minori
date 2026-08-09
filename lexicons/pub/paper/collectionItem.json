@@ -1,0 +1,29 @@
+{
+  "lexicon": 1,
+  "id": "pub.paper.collectionItem",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "Membership of one reference in one collection. A separate record (not an array on either side) so a reference can join many collections without being rewritten, and so adds/removes are cheap single-record writes. Same shape as app.bsky.graph.listitem.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["collection", "reference", "addedAt"],
+        "properties": {
+          "collection": { "type": "ref", "ref": "com.atproto.repo.strongRef" },
+          "reference": { "type": "ref", "ref": "com.atproto.repo.strongRef" },
+          "note": { "type": "string", "maxLength": 10000, "maxGraphemes": 2000, "description": "Why this paper is in THIS collection: 'cite for the baseline comparison', 'reviewer 2 asked for this'. Distinct from a reading note, which is not collection-specific." },
+          "sections": {
+            "type": "array",
+            "maxLength": 20,
+            "description": "Manuscript sections where this will be cited, e.g. ['intro', 'related-work']. Turns a flat bibliography into an outline and makes 'which references are not yet cited anywhere' answerable.",
+            "items": { "type": "string", "maxLength": 200, "maxGraphemes": 40 }
+          },
+          "citeKeyOverride": { "type": "string", "maxLength": 128, "description": "Collection-local citekey, for when a co-author's existing .bib already uses a different key for this work." },
+          "sortKey": { "type": "string", "maxLength": 64, "description": "Opaque fractional-index string for manual ordering. Fractional (not integer) so reordering one item is one write, not N." },
+          "addedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "lexicon": 1,
+  "id": "id.career.patent",
+  "defs": {
+    "main": {
+      "type": "record",
+      "description": "An industrial property right: patent, utility model, design, or trademark (researchmap 産業財産権). Not folded into pub.paper.reference despite CSL having a 'patent' type, because the CV-relevant facts are the three distinct numbers a patent acquires as it moves through prosecution -- application, publication, registration -- and a bibliographic record has nowhere to put a lifecycle. Japanese practice cites the application number (特願) long before anything is granted, so `applicationNumber` alone is a valid record.",
+      "key": "tid",
+      "record": {
+        "type": "object",
+        "required": ["title", "createdAt"],
+        "properties": {
+          "title": { "type": "string", "maxLength": 3000, "maxGraphemes": 300 },
+          "rightType": { "type": "string", "knownValues": ["patent", "utilityModel", "designRight", "trademark", "plantVariety"] },
+          "jurisdiction": { "type": "string", "maxLength": 8, "description": "ISO 3166-1 alpha-2, or 'WO' for PCT and 'EP' for European applications." },
+          "applicationNumber": { "type": "string", "maxLength": 64, "description": "e.g. '特願2020-001413', 'US 17/123,456'. Usually the only number that exists for years." },
+          "publicationNumber": { "type": "string", "maxLength": 64, "description": "e.g. '特開2021-108591'." },
+          "registrationNumber": { "type": "string", "maxLength": 64, "description": "e.g. '特許第1234567号'. Present only once granted." },
+          "status": { "type": "string", "knownValues": ["filed", "published", "underExamination", "granted", "rejected", "withdrawn", "abandoned", "expired", "licensed"] },
+          "filingDate": { "type": "string", "maxLength": 10, "description": "YYYY, YYYY-MM, or YYYY-MM-DD." },
+          "publicationDate": { "type": "string", "maxLength": 10 },
+          "registrationDate": { "type": "string", "maxLength": 10 },
+          "inventors": { "type": "array", "maxLength": 50, "items": { "type": "ref", "ref": "id.career.defs#personRef" }, "description": "Inventor names on a filed patent are already public record, so consent concerns do not apply here as they do in id.career.supervision." },
+          "applicants": { "type": "array", "maxLength": 20, "items": { "type": "ref", "ref": "id.career.defs#organization" }, "description": "出願人. Usually the university or company, not the inventors." },
+          "ipcCodes": { "type": "array", "maxLength": 20, "items": { "type": "string", "maxLength": 32 }, "description": "IPC or CPC classification codes." },
+          "familyMembers": { "type": "array", "maxLength": 20, "items": { "type": "ref", "ref": "com.atproto.repo.strongRef" }, "description": "StrongRefs to other id.career.patent records in the same patent family (national-phase entries of one PCT application). Prevents one invention from being padded into ten CV lines." },
+          "relatedWork": { "type": "ref", "ref": "com.atproto.repo.strongRef", "description": "StrongRef to a pub.paper.reference for the paper covering the same work." },
+          "url": { "type": "string", "format": "uri", "description": "J-PlatPat, Google Patents, or Espacenet link." },
+          "createdAt": { "type": "string", "format": "datetime" },
+          "updatedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}
