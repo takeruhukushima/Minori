@@ -55,6 +55,7 @@ export function ProjectsTab({ client }: { client: Repo }) {
   const [projects, setProjects] = useState<Rec[]>([]);
   const [selected, setSelected] = useState<Rec | null>(null);
   const [detail, setDetail] = useState<RecordDetailData | null>(null);
+  const [editingProject, setEditingProject] = useState<Rec | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
 
   // new project form
@@ -94,9 +95,11 @@ export function ProjectsTab({ client }: { client: Repo }) {
         $type: NSID.collection,
         name: pName.trim(),
         ...clean({ description: pDesc, purpose: pPurpose, targetVenue: pVenue }),
-        createdAt: now(),
+        createdAt: editingProject?.value.createdAt ?? now(),
       };
-      const ref = await client.createRecord(NSID.collection, rec);
+      const ref = editingProject
+        ? await client.putRecord(NSID.collection, rkeyFromUri(editingProject.uri), rec)
+        : await client.createRecord(NSID.collection, rec);
       const verified = await client.getRecord(NSID.collection, rkeyFromUri(ref.uri));
       if (verified.uri !== ref.uri || (verified.cid && verified.cid !== ref.cid)) {
         throw new Error("PDS read-after-write verification failed");
@@ -104,15 +107,27 @@ export function ProjectsTab({ client }: { client: Repo }) {
       setPName("");
       setPDesc("");
       setPVenue("");
+      const wasEditing = !!editingProject;
+      setEditingProject(null);
       await loadProjects();
       const created = { uri: ref.uri, cid: ref.cid, value: rec };
       setSelected(created);
-      setMsg({ kind: "ok", text: `プロジェクト「${rec.name}」を作成し、PDSからの読み戻しを確認しました。` });
+      setMsg({ kind: "ok", text: `プロジェクト「${rec.name}」を${wasEditing ? "更新" : "作成"}し、PDSからの読み戻しを確認しました。` });
     } catch (err: any) {
       setMsg({ kind: "err", text: `作成失敗: ${err?.message ?? err}` });
     } finally {
       setCreatingP(false);
     }
+  }
+
+  function startProjectEdit(project: Rec) {
+    setPName(project.value.name ?? "");
+    setPDesc(project.value.description ?? "");
+    setPPurpose(project.value.purpose ?? "");
+    setPVenue(project.value.targetVenue ?? "");
+    setEditingProject(project);
+    setMsg(null);
+    document.getElementById("project-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   async function deleteProject(p: Rec) {
@@ -135,16 +150,9 @@ export function ProjectsTab({ client }: { client: Repo }) {
     }
   }
 
-  async function updateProject(p: Rec, value: Record<string, unknown>) {
-    if (value.$type !== NSID.collection) throw new Error(`$type は ${NSID.collection} にしてください。`);
-    await client.putRecord(NSID.collection, rkeyFromUri(p.uri), value);
-    await loadProjects();
-    setMsg({ kind: "ok", text: "プロジェクトを更新しました。" });
-  }
-
   return (
     <>
-      <div className="panel">
+      <div className="panel" id="project-form">
         <h2>新しいプロジェクト</h2>
         <p className="hint">
           プロジェクト = <code>pub.paper.collection</code>。執筆中の論文・講義・SR
@@ -161,8 +169,9 @@ export function ProjectsTab({ client }: { client: Repo }) {
           </div>
           <div className="toolbar">
             <button className="btn" type="submit" disabled={creatingP}>
-              {creatingP ? "作成中…" : "プロジェクトを作成"}
+              {creatingP ? "保存中…" : editingProject ? "プロジェクトを更新" : "プロジェクトを作成"}
             </button>
+            {editingProject && <button className="btn ghost" type="button" onClick={() => { setEditingProject(null); setPName(""); setPDesc(""); setPPurpose("writing"); setPVenue(""); }}>編集をキャンセル</button>}
           </div>
         </form>
         <Message msg={msg} />
@@ -206,10 +215,9 @@ export function ProjectsTab({ client }: { client: Repo }) {
       <RecordDetailDialog
         detail={detail}
         onClose={() => setDetail(null)}
-        onSave={detail?.uri ? (value) => {
+        onEdit={detail?.uri ? () => {
           const project = projects.find((candidate) => candidate.uri === detail.uri);
-          if (!project) throw new Error("プロジェクトが見つかりません。");
-          return updateProject(project, value);
+          if (project) startProjectEdit(project);
         } : undefined}
         onDelete={detail?.uri ? () => {
           const project = projects.find((candidate) => candidate.uri === detail.uri);
@@ -225,6 +233,7 @@ export function ProjectsTab({ client }: { client: Repo }) {
 
 function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
   const [items, setItems] = useState<{ item: Rec; ref: Rec | null; authorship: Rec | null }[]>([]);
+  const [editingPaper, setEditingPaper] = useState<{ item: Rec; ref: Rec; authorship: Rec | null } | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
   const [detail, setDetail] = useState<RecordDetailData | null>(null);
@@ -288,6 +297,43 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
       .map((name, i) => ({ role: "author", literal: name, sequence: i + 1 }));
   }
 
+  function resetPaperForm() {
+    setType("article-journal");
+    setTitle("");
+    setAuthors("");
+    setContainer("");
+    setYear("");
+    setDoi("");
+    setArxivId("");
+    setUrl("");
+    setClaim(true);
+    setOutputCategory("article");
+    setIsFeatured(false);
+    setEditingPaper(null);
+  }
+
+  function startPaperEdit(entry: { item: Rec; ref: Rec | null; authorship: Rec | null }) {
+    if (!entry.ref) {
+      setMsg({ kind: "err", text: "参照レコードを取得できないため編集できません。" });
+      return;
+    }
+    const value = entry.ref.value;
+    setType(value.type ?? "article-journal");
+    setTitle(value.title ?? "");
+    setAuthors((value.contributors ?? []).map((person: any) => person.literal ?? person.name ?? "").filter(Boolean).join("\n"));
+    setContainer(value.containerTitle ?? "");
+    setYear(value.issued?.year ? String(value.issued.year) : "");
+    setDoi(value.doi ?? "");
+    setArxivId(value.arxivId ?? "");
+    setUrl(value.url ?? "");
+    setClaim(!!entry.authorship);
+    setOutputCategory(entry.authorship?.value.outputCategory ?? "article");
+    setIsFeatured(!!entry.authorship?.value.isFeatured);
+    setEditingPaper({ item: entry.item, ref: entry.ref, authorship: entry.authorship });
+    setMsg(null);
+    document.getElementById(`paper-form-${rkeyFromUri(project.uri)}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   async function addPaper(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) {
@@ -310,6 +356,43 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
       if (contribs.length) reference.contributors = contribs;
       const y = parseInt(year, 10);
       if (!Number.isNaN(y)) reference.issued = { year: y };
+
+      if (editingPaper) {
+        reference.createdAt = editingPaper.ref.value.createdAt ?? reference.createdAt;
+        const refRef = await client.putRecord(NSID.reference, rkeyFromUri(editingPaper.ref.uri), reference);
+        const linkedItems = (await listAllRecords(client, NSID.collectionItem))
+          .filter((record) => record.value.reference?.uri === editingPaper.ref.uri);
+        await Promise.all(linkedItems.map((record) => client.putRecord(
+          NSID.collectionItem,
+          rkeyFromUri(record.uri),
+          { ...record.value, reference: { uri: refRef.uri, cid: refRef.cid } },
+        )));
+        if (claim) {
+          const authorshipRecord = {
+            $type: NSID.authorship,
+            reference: { uri: refRef.uri, cid: refRef.cid },
+            role: "author",
+            ...clean({ outputCategory }),
+            ...(isFeatured ? { isFeatured: true } : {}),
+            createdAt: editingPaper.authorship?.value.createdAt ?? now(),
+          };
+          if (editingPaper.authorship) {
+            await client.putRecord(NSID.authorship, rkeyFromUri(editingPaper.authorship.uri), authorshipRecord);
+          } else {
+            await client.createRecord(NSID.authorship, authorshipRecord);
+          }
+        } else if (editingPaper.authorship) {
+          await client.deleteRecord(NSID.authorship, rkeyFromUri(editingPaper.authorship.uri));
+        }
+        const verified = await client.getRecord(NSID.reference, rkeyFromUri(editingPaper.ref.uri));
+        if (verified.uri !== refRef.uri || (verified.cid && verified.cid !== refRef.cid)) {
+          throw new Error("Reference read-after-write verification failed");
+        }
+        resetPaperForm();
+        await load();
+        setMsg({ kind: "ok", text: "論文情報をフォームから更新しました。" });
+        return;
+      }
 
       const refRef: StrongRef = await client.createRecord(NSID.reference, reference);
       created.push({ collection: NSID.reference, uri: refRef.uri });
@@ -341,14 +424,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
       }
 
       // reset
-      setTitle("");
-      setAuthors("");
-      setContainer("");
-      setYear("");
-      setDoi("");
-      setArxivId("");
-      setUrl("");
-      setIsFeatured(false);
+      resetPaperForm();
       await load();
       setMsg({
         kind: "ok",
@@ -379,13 +455,6 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
     }
   }
 
-  async function updatePaper(reference: Rec, value: Record<string, unknown>) {
-    if (value.$type !== NSID.reference) throw new Error(`$type は ${NSID.reference} にしてください。`);
-    await client.putRecord(NSID.reference, rkeyFromUri(reference.uri), value);
-    await load();
-    setMsg({ kind: "ok", text: "論文レコードを更新しました。" });
-  }
-
   async function deletePaper(item: Rec, reference: Rec | null, authorship: Rec | null) {
     const referenceUri = reference?.uri ?? item.value.reference?.uri;
     const [allItems, allAuthorships] = referenceUri
@@ -410,7 +479,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
 
   return (
     <>
-    <div className="panel" style={{ borderColor: "var(--accent)" }}>
+    <div className="panel" id={`paper-form-${rkeyFromUri(project.uri)}`} style={{ borderColor: "var(--accent)" }}>
       <h2>「{project.value.name}」の論文</h2>
       <p className="hint">
         論文（pub.paper.reference）を作り、このプロジェクトに所属させます（collectionItem）。
@@ -451,8 +520,9 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
 
         <div className="toolbar">
           <button className="btn" type="submit" disabled={busy}>
-            {busy ? "追加中…" : "論文を追加"}
+            {busy ? "保存中…" : editingPaper ? "論文情報を更新" : "論文を追加"}
           </button>
+          {editingPaper && <button className="btn ghost" type="button" onClick={resetPaperForm}>編集をキャンセル</button>}
         </div>
         <Message msg={msg} />
       </form>
@@ -466,7 +536,6 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
               title: ref?.value.title ?? "文献レコード",
               uri: item.uri,
               cid: item.cid,
-              editableValue: ref?.value,
               value: {
                 collectionItemRecord: item.value,
                 referenceRecord: ref?.value ?? null,
@@ -495,10 +564,9 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
     <RecordDetailDialog
       detail={detail}
       onClose={() => setDetail(null)}
-      onSave={detail ? async (value) => {
+      onEdit={detail ? () => {
         const entry = items.find(({ item }) => item.uri === detail.uri);
-        if (!entry?.ref) throw new Error("編集対象の論文レコードが見つかりません。");
-        await updatePaper(entry.ref, value);
+        if (entry) startPaperEdit(entry);
       } : undefined}
       onDelete={detail ? async () => {
         const entry = items.find(({ item }) => item.uri === detail.uri);

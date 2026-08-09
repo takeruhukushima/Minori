@@ -23,30 +23,24 @@ export interface RecordDetailData {
   uri?: string;
   cid?: string;
   value: unknown;
-  editableValue?: Record<string, unknown>;
 }
 
 export function RecordDetailDialog({
   detail,
   onClose,
-  onSave,
+  onEdit,
   onDelete,
 }: {
   detail: RecordDetailData | null;
   onClose: () => void;
-  onSave?: (value: Record<string, unknown>) => Promise<void>;
+  onEdit?: () => void;
   onDelete?: () => Promise<void>;
 }) {
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    setEditing(false);
     setError("");
-    const editableValue = detail?.editableValue ?? detail?.value;
-    setDraft(isObject(editableValue) ? JSON.stringify(editableValue, null, 2) : "");
   }, [detail]);
   useEffect(() => {
     if (!detail) return;
@@ -63,22 +57,6 @@ export function RecordDetailDialog({
     ...(detail.cid ? { cid: detail.cid } : {}),
     ...(isObject(detail.value) ? detail.value : { value: detail.value }),
   };
-
-  async function save() {
-    if (!onSave) return;
-    setError("");
-    try {
-      const value: unknown = JSON.parse(draft);
-      if (!isObject(value)) throw new Error("レコードはJSONオブジェクトで入力してください。");
-      setBusy(true);
-      await onSave(value);
-      onClose();
-    } catch (err: any) {
-      setError(err?.message ?? String(err));
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function remove() {
     if (!onDelete || !detail || !confirm(`「${detail.title}」をPDSから削除しますか？`)) return;
@@ -113,21 +91,11 @@ export function RecordDetailDialog({
           </button>
         </header>
         <div className="detail-content">
-          {editing ? (
-            <label className="detail-editor">
-              <span>レコードJSON</span>
-              <textarea value={draft} onChange={(event) => setDraft(event.target.value)} spellCheck={false} />
-            </label>
-          ) : <DetailObject value={completeValue} />}
+          <DetailObject value={completeValue} />
           {error && <div className="msg err">{error}</div>}
-          {(onSave || onDelete) && (
+          {(onEdit || onDelete) && (
             <div className="toolbar detail-actions">
-              {onSave && (editing ? (
-                <>
-                  <button className="btn" type="button" disabled={busy} onClick={save}>保存する</button>
-                  <button className="btn ghost" type="button" disabled={busy} onClick={() => setEditing(false)}>キャンセル</button>
-                </>
-              ) : <button className="btn ghost" type="button" onClick={() => setEditing(true)}>編集</button>)}
+              {onEdit && <button className="btn ghost" type="button" onClick={() => { onEdit(); onClose(); }}>フォームで編集</button>}
               {onDelete && <button className="btn danger" type="button" disabled={busy} onClick={remove}>削除</button>}
             </div>
           )}

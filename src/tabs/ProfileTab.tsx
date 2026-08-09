@@ -107,17 +107,6 @@ export function ProfileTab({ client }: { client: Repo }) {
     }
   }
 
-  async function saveDetail(value: Record<string, unknown>) {
-    if (value.$type !== NSID.profile) throw new Error(`$type は ${NSID.profile} にしてください。`);
-    const written = await client.putRecord(NSID.profile, "self", value);
-    const verified = await client.getRecord(NSID.profile, "self");
-    if (verified.uri !== written.uri || (verified.cid && verified.cid !== written.cid)) {
-      throw new Error("PDS read-after-write verification failed");
-    }
-    setSavedRecord({ title: String(verified.value.displayName ?? "CVプロフィール"), uri: verified.uri, cid: verified.cid, value: verified.value });
-    setMsg({ kind: "ok", text: "プロフィールを詳細画面から更新しました。フォームへは再読み込み後に反映されます。" });
-  }
-
   async function deleteDetail() {
     await client.deleteRecord(NSID.profile, "self");
     setSavedRecord(null);
@@ -129,7 +118,7 @@ export function ProfileTab({ client }: { client: Repo }) {
 
   return (
     <>
-    <form className="panel" onSubmit={save}>
+    <form className="panel" id="profile-form" onSubmit={save}>
       <h2>CV プロフィール</h2>
       <p className="hint">
         {createdAt ? "既存のプロフィールを編集中。" : "まだプロフィールがありません。作成します。"}
@@ -187,7 +176,7 @@ export function ProfileTab({ client }: { client: Repo }) {
     <RecordDetailDialog
       detail={showDetail ? savedRecord : null}
       onClose={() => setShowDetail(false)}
-      onSave={savedRecord ? saveDetail : undefined}
+      onEdit={savedRecord ? () => document.getElementById("profile-form")?.scrollIntoView({ behavior: "smooth", block: "start" }) : undefined}
       onDelete={savedRecord ? deleteDetail : undefined}
     />
     </>

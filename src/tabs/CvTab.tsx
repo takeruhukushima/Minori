@@ -271,6 +271,7 @@ function Section({ client, def }: { client: Repo; def: SectionDef }) {
   const [values, setValues] = useState<Record<string, string | boolean>>({});
   const [records, setRecords] = useState<{ uri: string; cid: string; value: any }[]>([]);
   const [detail, setDetail] = useState<RecordDetailData | null>(null);
+  const [editing, setEditing] = useState<{ uri: string; createdAt?: string } | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
 
@@ -293,7 +294,7 @@ function Section({ client, def }: { client: Repo; def: SectionDef }) {
   }, [client.did, def.nsid]);
 
   function buildRecord(): any {
-    const rec: any = { $type: def.nsid, createdAt: now() };
+    const rec: any = { $type: def.nsid, createdAt: editing?.createdAt ?? now() };
     for (const f of def.fields) {
       if (f.type === "org") {
         const org = clean({
@@ -336,14 +337,18 @@ function Section({ client, def }: { client: Repo; def: SectionDef }) {
         setBusy(false);
         return;
       }
-      const written = await client.createRecord(def.nsid, rec);
+      const written = editing
+        ? await client.putRecord(def.nsid, rkeyFromUri(editing.uri), rec)
+        : await client.createRecord(def.nsid, rec);
       const verified = await client.getRecord(def.nsid, rkeyFromUri(written.uri));
       if (verified.uri !== written.uri || (verified.cid && verified.cid !== written.cid)) {
         throw new Error("PDS read-after-write verification failed");
       }
       setValues({});
+      const wasEditing = !!editing;
+      setEditing(null);
       await load();
-      setMsg({ kind: "ok", text: `${def.title} を追加し、PDSからの読み戻しを確認しました。` });
+      setMsg({ kind: "ok", text: `${def.title} を${wasEditing ? "更新" : "追加"}し、PDSからの読み戻しを確認しました。` });
     } catch (err: any) {
       setMsg({ kind: "err", text: `追加失敗: ${err?.message ?? err}` });
     } finally {
@@ -360,22 +365,26 @@ function Section({ client, def }: { client: Repo; def: SectionDef }) {
     }
   }
 
-  async function update(uri: string, record: Record<string, unknown>) {
-    if (record.$type !== def.nsid) throw new Error(`$type は ${def.nsid} にしてください。`);
-    const validationError = validate(record);
-    if (validationError) throw new Error(validationError);
-    const written = await client.putRecord(def.nsid, rkeyFromUri(uri), record);
-    const verified = await client.getRecord(def.nsid, rkeyFromUri(uri));
-    if (verified.uri !== written.uri || (verified.cid && verified.cid !== written.cid)) {
-      throw new Error("PDS read-after-write verification failed");
+  function startEdit(record: { uri: string; value: any }) {
+    const next: Record<string, string | boolean> = {};
+    for (const field of def.fields) {
+      if (field.type === "org") {
+        for (const sub of ORG_SUBS) next[`${field.key}.${sub.suffix}`] = record.value[field.key]?.[sub.suffix] ?? "";
+      } else if (field.type === "checkbox") {
+        next[field.key] = !!record.value[field.key];
+      } else {
+        next[field.key] = record.value[field.key] ?? "";
+      }
     }
-    await load();
-    setMsg({ kind: "ok", text: `${def.title}を更新しました。` });
+    setValues(next);
+    setEditing({ uri: record.uri, createdAt: record.value.createdAt });
+    setMsg(null);
+    document.getElementById(`section-${def.nsid}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   return (
     <>
-    <div className="panel">
+    <div className="panel" id={`section-${def.nsid}`}>
       <div className="section-title">
         <h2>
           {def.title} <span className="tag">{records.length}</span>
@@ -429,8 +438,9 @@ function Section({ client, def }: { client: Repo; def: SectionDef }) {
         </div>
         <div className="toolbar">
           <button className="btn" type="submit" disabled={busy}>
-            {busy ? "追加中…" : `${def.title}を追加`}
+            {busy ? "保存中…" : editing ? `${def.title}を更新` : `${def.title}を追加`}
           </button>
+          {editing && <button className="btn ghost" type="button" onClick={() => { setEditing(null); setValues({}); }}>編集をキャンセル</button>}
         </div>
         <Message msg={msg} />
       </form>
@@ -459,7 +469,10 @@ function Section({ client, def }: { client: Repo; def: SectionDef }) {
     <RecordDetailDialog
       detail={detail}
       onClose={() => setDetail(null)}
-      onSave={detail?.uri ? (value) => update(detail.uri!, value) : undefined}
+      onEdit={detail?.uri ? () => {
+        const record = records.find((candidate) => candidate.uri === detail.uri);
+        if (record) startEdit(record);
+      } : undefined}
       onDelete={detail?.uri ? () => remove(detail.uri!) : undefined}
     />
     </>
