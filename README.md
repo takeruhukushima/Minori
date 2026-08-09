@@ -28,7 +28,7 @@ VITE_PUBLIC_URL=https://minori.example.com pnpm deploy
 - OAuth後にCVプロフィールを保存し、「PDSからの読み戻しを確認しました」と表示される
 - ログイン直後の「接続を検証」で、一時レコードの作成・読み戻し・削除がすべて成功する
 
-workers.dev URLを使う場合も、その確定URLを `VITE_PUBLIC_URL` に指定して再デプロイしてください。URL未指定の通常ビルドはUI確認用で、OAuth metadataを生成しません。
+現在の既定値は `https://minori.takeruf.workers.dev` なので、Git連携ビルドでは変数未設定でもmetadataが生成されます。カスタムドメインへ移行するときだけ `VITE_PUBLIC_URL` で上書きしてください。
 
 ## 保存するレコード
 

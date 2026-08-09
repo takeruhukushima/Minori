@@ -51,7 +51,11 @@ function oauthMetadata(origin?: string): Plugin {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const publicUrl = env.VITE_PUBLIC_URL || env.CF_PAGES_URL;
+  // Keep Git-connected Cloudflare builds OAuth-capable even when the build
+  // variable has not been configured yet. VITE_PUBLIC_URL still overrides
+  // this for a future custom domain.
+  const publicUrl =
+    env.VITE_PUBLIC_URL || env.CF_PAGES_URL || "https://minori.takeruf.workers.dev";
   return {
     plugins: [react(), oauthMetadata(publicUrl)],
     server: { port: 5173 },
