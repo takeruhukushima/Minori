@@ -291,7 +291,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
 
   function buildContributors() {
     return authors
-      .split(/[;\n]/)
+      .split(/[;,\n]/)
       .map((s) => s.trim())
       .filter(Boolean)
       .map((name, i) => ({ role: "author", literal: name, sequence: i + 1 }));
@@ -498,7 +498,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
         </div>
         <div style={{ marginTop: 12 }}>
           <Field
-            label="著者（; または改行区切り）"
+            label="著者（カンマ、;、改行区切り）"
             value={authors}
             onChange={setAuthors}
             textarea

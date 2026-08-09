@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { rkeyFromUri } from "../atproto";
+import { rkeyFromUri, StrongRef } from "../atproto";
 import { listAllRecords, Repo } from "../repo";
 import { NSID } from "../lexicons";
 import { Checkbox, Field, Message, Msg, SelectField, clean, now } from "../ui";
@@ -260,9 +260,167 @@ const ORG_SUBS = [
 export function CvTab({ client }: { client: Repo }) {
   return (
     <>
+      <PublicationsSection client={client} />
       {SECTIONS.map((s) => (
         <Section key={s.nsid} client={client} def={s} />
       ))}
+    </>
+  );
+}
+
+const PUBLICATION_TYPES = ["article-journal", "paper-conference", "preprint", "chapter", "book", "thesis", "report", "dataset", "software"].map((value) => ({ value, label: value }));
+const OUTPUT_CATEGORIES = ["article", "misc", "book", "other"].map((value) => ({ value, label: value }));
+
+function PublicationsSection({ client }: { client: Repo }) {
+  const [records, setRecords] = useState<{ authorship: any; reference: any | null }[]>([]);
+  const [detail, setDetail] = useState<RecordDetailData | null>(null);
+  const [title, setTitle] = useState("");
+  const [type, setType] = useState("article-journal");
+  const [authors, setAuthors] = useState("");
+  const [venue, setVenue] = useState("");
+  const [year, setYear] = useState("");
+  const [doi, setDoi] = useState("");
+  const [url, setUrl] = useState("");
+  const [category, setCategory] = useState("article");
+  const [featured, setFeatured] = useState(false);
+  const [editing, setEditing] = useState<{ authorship: any; reference: any } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<Msg>(null);
+
+  async function load() {
+    try {
+      const claims = await listAllRecords(client, NSID.authorship);
+      const resolved = await Promise.all(claims.map(async (authorship) => {
+        try {
+          const uri = authorship.value.reference?.uri;
+          if (!uri) return { authorship, reference: null };
+          const reference = await client.getRecord(NSID.reference, rkeyFromUri(uri));
+          return { authorship, reference };
+        } catch { return { authorship, reference: null }; }
+      }));
+      setRecords(resolved);
+    } catch { setRecords([]); }
+  }
+
+  useEffect(() => { load(); }, [client.did]);
+
+  function reset() {
+    setTitle(""); setType("article-journal"); setAuthors(""); setVenue(""); setYear("");
+    setDoi(""); setUrl(""); setCategory("article"); setFeatured(false);
+    setEditing(null);
+  }
+
+  function startEdit(entry: { authorship: any; reference: any | null }) {
+    if (!entry.reference) return setMsg({ kind: "err", text: "参照レコードを取得できないため編集できません。" });
+    const value = entry.reference.value;
+    setTitle(value.title ?? ""); setType(value.type ?? "article-journal");
+    setAuthors((value.contributors ?? []).map((person: any) => person.literal ?? person.name ?? "").filter(Boolean).join("\n"));
+    setVenue(value.containerTitle ?? ""); setYear(value.issued?.year ? String(value.issued.year) : "");
+    setDoi(value.doi ?? ""); setUrl(value.url ?? "");
+    setCategory(entry.authorship.value.outputCategory ?? "article"); setFeatured(!!entry.authorship.value.isFeatured);
+    setEditing({ authorship: entry.authorship, reference: entry.reference }); setMsg(null);
+    document.getElementById("cv-publications")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function addPublication(event: React.FormEvent) {
+    event.preventDefault();
+    if (!title.trim()) return setMsg({ kind: "err", text: "タイトルは必須です。" });
+    setBusy(true); setMsg(null);
+    let referenceRef: StrongRef | null = null;
+    try {
+      const contributors = authors.split(/[;,\n]/).map((name) => name.trim()).filter(Boolean)
+        .map((literal, index) => ({ role: "author", literal, sequence: index + 1 }));
+      const parsedYear = Number.parseInt(year, 10);
+      const reference: any = {
+        $type: NSID.reference, type, title: title.trim(), createdAt: now(),
+        ...clean({ containerTitle: venue, doi: doi.trim().replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, "").replace(/^doi:\s*/i, "").toLowerCase(), url }),
+      };
+      if (contributors.length) reference.contributors = contributors;
+      if (!Number.isNaN(parsedYear)) reference.issued = { year: parsedYear };
+      referenceRef = editing
+        ? await client.putRecord(NSID.reference, rkeyFromUri(editing.reference.uri), { ...reference, createdAt: editing.reference.value.createdAt ?? reference.createdAt })
+        : await client.createRecord(NSID.reference, reference);
+      const authorshipRecord = {
+        $type: NSID.authorship,
+        reference: referenceRef,
+        role: "author",
+        outputCategory: category,
+        ...(featured ? { isFeatured: true } : {}),
+        createdAt: editing?.authorship.value.createdAt ?? now(),
+      };
+      if (editing) {
+        await client.putRecord(NSID.authorship, rkeyFromUri(editing.authorship.uri), authorshipRecord);
+        const linkedItems = (await listAllRecords(client, NSID.collectionItem)).filter((record) => record.value.reference?.uri === editing.reference.uri);
+        await Promise.all(linkedItems.map((record) => client.putRecord(NSID.collectionItem, rkeyFromUri(record.uri), {
+          ...record.value, reference: referenceRef,
+        })));
+      } else {
+        await client.createRecord(NSID.authorship, authorshipRecord);
+      }
+      const wasEditing = !!editing;
+      reset(); await load();
+      setMsg({ kind: "ok", text: `論文・出版物を${wasEditing ? "更新" : "CVへ登録"}しました。` });
+    } catch (error: any) {
+      if (referenceRef && !editing) await client.deleteRecord(NSID.reference, rkeyFromUri(referenceRef.uri)).catch(() => {});
+      setMsg({ kind: "err", text: `登録失敗: ${error?.message ?? error}` });
+    } finally { setBusy(false); }
+  }
+
+  async function removeClaim(uri: string) {
+    await client.deleteRecord(NSID.authorship, rkeyFromUri(uri));
+    await load();
+    setMsg({ kind: "ok", text: "CVの論文一覧から外しました。文献レコードは保持されています。" });
+  }
+
+  return (
+    <>
+      <div className="panel" id="cv-publications">
+        <h2>論文・出版物 <span className="tag">{records.length}</span></h2>
+        <p className="hint">自分が著者として発表した成果です。プロジェクトで業績登録した論文もここに表示されます。</p>
+        <form onSubmit={addPublication}>
+          <div className="grid">
+            <SelectField label="種別 (CSL)" value={type} onChange={setType} options={PUBLICATION_TYPES} />
+            <Field label="タイトル" required value={title} onChange={setTitle} />
+            <Field label="掲載誌・会議名" value={venue} onChange={setVenue} />
+            <Field label="発行年" value={year} onChange={setYear} placeholder="2026" />
+            <Field label="DOI" value={doi} onChange={setDoi} />
+            <Field label="URL" value={url} onChange={setUrl} />
+          </div>
+          <div style={{ marginTop: 12 }}><Field label="著者（カンマ、;、改行区切り）" value={authors} onChange={setAuthors} textarea /></div>
+          <div className="row" style={{ marginTop: 12 }}>
+            <SelectField label="CV区分" value={category} onChange={setCategory} options={OUTPUT_CATEGORIES} />
+            <Checkbox label="主要業績" checked={featured} onChange={setFeatured} />
+          </div>
+          <div className="toolbar">
+            <button className="btn" disabled={busy}>{busy ? "保存中…" : editing ? "論文・出版物を更新" : "論文・出版物を登録"}</button>
+            {editing && <button className="btn ghost" type="button" onClick={reset}>編集をキャンセル</button>}
+          </div>
+          <Message msg={msg} />
+        </form>
+        <div className="list">
+          {records.length === 0 && <div className="empty">まだ論文・出版物がありません。</div>}
+          {records.map(({ authorship, reference }) => (
+            <RecordCardShell key={authorship.uri} onOpen={() => setDetail({
+              title: reference?.value.title ?? "文献レコード",
+              uri: authorship.uri,
+              cid: authorship.cid,
+              value: { referenceRecord: reference?.value ?? null, referenceUri: reference?.uri ?? null, authorshipRecord: authorship.value },
+            })}>
+              <div><div className="title">{reference?.value.title ?? "（参照解決できず）"}</div><div className="meta">{[reference?.value.containerTitle, reference?.value.issued?.year].filter(Boolean).join(" · ")}</div></div>
+              <button className="btn danger small" type="button" onClick={(event) => { event.stopPropagation(); if (confirm("CVの論文一覧から外しますか？")) removeClaim(authorship.uri); }}>CVから外す</button>
+            </RecordCardShell>
+          ))}
+        </div>
+      </div>
+      <RecordDetailDialog
+        detail={detail}
+        onClose={() => setDetail(null)}
+        onEdit={detail?.uri ? () => {
+          const entry = records.find(({ authorship }) => authorship.uri === detail.uri);
+          if (entry) startEdit(entry);
+        } : undefined}
+        onDelete={detail?.uri ? () => removeClaim(detail.uri!) : undefined}
+      />
     </>
   );
 }
