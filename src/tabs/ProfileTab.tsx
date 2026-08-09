@@ -4,6 +4,15 @@ import { NSID } from "../lexicons";
 import { Checkbox, Field, Message, Msg, clean, now } from "../ui";
 import { RecordDetailData, RecordDetailDialog } from "../RecordDetail";
 
+interface WebLinkDraft {
+  id: string;
+  label: string;
+  url: string;
+}
+
+let nextWebLinkId = 1;
+const newWebLink = (label = "", url = ""): WebLinkDraft => ({ id: `web-link-${nextWebLinkId++}`, label, url });
+
 // id.career.profile — single record, rkey "self".
 export function ProfileTab({ client }: { client: Repo }) {
   const [displayName, setDisplayName] = useState("");
@@ -18,6 +27,7 @@ export function ProfileTab({ client }: { client: Repo }) {
   const [researchmapId, setResearchmapId] = useState("");
   const [kakenId, setKakenId] = useState("");
   const [googleScholarId, setGoogleScholarId] = useState("");
+  const [websites, setWebsites] = useState<WebLinkDraft[]>([newWebLink("Website")]);
   const [keywords, setKeywords] = useState("");
   const [acceptingStudents, setAcceptingStudents] = useState(false);
   const [openToCollaboration, setOpenToCollaboration] = useState(false);
@@ -47,6 +57,9 @@ export function ProfileTab({ client }: { client: Repo }) {
         setResearchmapId(v.researchmapId ?? "");
         setKakenId(v.kakenId ?? "");
         setGoogleScholarId(v.googleScholarId ?? "");
+        setWebsites(v.websites?.length
+          ? v.websites.map((link: any) => newWebLink(link.label ?? "", link.url ?? ""))
+          : [newWebLink("Website")]);
         setKeywords((v.keywords ?? []).join(", "));
         setAcceptingStudents(!!v.acceptingStudents);
         setOpenToCollaboration(!!v.openToCollaboration);
@@ -71,6 +84,14 @@ export function ProfileTab({ client }: { client: Repo }) {
         .split(",")
         .map((k) => k.trim())
         .filter(Boolean);
+      const webLinks = websites
+        .map(({ label, url }) => ({ label: label.trim(), url: url.trim() }))
+        .filter((link) => link.url);
+      for (const link of webLinks) {
+        let parsed: URL;
+        try { parsed = new URL(link.url); } catch { throw new Error(`Webサイト・SNSのURLが正しくありません: ${link.url}`); }
+        if (!["http:", "https:"].includes(parsed.protocol)) throw new Error(`Webサイト・SNSは http(s) URLで入力してください: ${link.url}`);
+      }
       const record: any = {
         $type: NSID.profile,
         ...clean({
@@ -89,6 +110,7 @@ export function ProfileTab({ client }: { client: Repo }) {
       };
       if (Object.keys(primaryAffiliation).length) record.primaryAffiliation = primaryAffiliation;
       if (kw.length) record.keywords = kw;
+      if (webLinks.length) record.websites = webLinks;
       if (acceptingStudents) record.acceptingStudents = true;
       if (openToCollaboration) record.openToCollaboration = true;
 
@@ -152,6 +174,37 @@ export function ProfileTab({ client }: { client: Repo }) {
         <Field label="科研費 研究者番号" value={kakenId} onChange={setKakenId} placeholder="12345678" />
         <Field label="Google Scholar ID" value={googleScholarId} onChange={setGoogleScholarId} />
       </div>
+
+      <hr className="sep" />
+      <div className="subhead">Webサイト・SNS</div>
+      <p className="hint">個人サイト、研究室ページ、GitHub、Bluesky、X、LinkedInなどの公開リンクを追加できます。</p>
+      <div className="web-links">
+        {websites.map((link, index) => (
+          <div className="web-link-row" key={link.id}>
+            <Field
+              label="表示名"
+              value={link.label}
+              onChange={(value) => setWebsites((current) => current.map((item) => item.id === link.id ? { ...item, label: value } : item))}
+              placeholder={index === 0 ? "Website" : "GitHub / Bluesky / X"}
+            />
+            <Field
+              label="URL"
+              type="url"
+              value={link.url}
+              onChange={(value) => setWebsites((current) => current.map((item) => item.id === link.id ? { ...item, url: value } : item))}
+              placeholder="https://example.com"
+            />
+            <button className="btn danger small web-link-remove" type="button" onClick={() => setWebsites((current) => current.filter((item) => item.id !== link.id))}>
+              削除
+            </button>
+          </div>
+        ))}
+      </div>
+      {websites.length < 15 && (
+        <button className="btn ghost small" type="button" onClick={() => setWebsites((current) => [...current, newWebLink()])}>
+          ＋ リンクを追加
+        </button>
+      )}
 
       <hr className="sep" />
       <div className="subhead">研究キーワード・状態</div>

@@ -145,6 +145,14 @@ button.btn.danger { background: transparent; color: var(--danger); border: 1px s
 
 .login-wrap { max-width: 420px; margin: 12vh auto 0; }
 .center-note { color: var(--muted); font-size: 12px; text-align: center; margin-top: 16px; }
+.web-links { display: grid; gap: 10px; margin-bottom: 10px; }
+.web-link-row { display: grid; grid-template-columns: minmax(130px, .55fr) minmax(240px, 1.45fr) auto; gap: 10px; align-items: end; }
+.web-link-remove { margin-bottom: 1px; }
+
+@media (max-width: 620px) {
+  .web-link-row { grid-template-columns: 1fr auto; }
+  .web-link-row label:first-child { grid-column: 1 / -1; }
+}
 
 .landing { max-width: 1180px; margin: 0 auto; padding: 0 28px 40px; }
 .landing-nav { height: 76px; display: flex; align-items: center; justify-content: space-between; }
