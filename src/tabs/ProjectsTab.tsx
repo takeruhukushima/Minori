@@ -3,6 +3,7 @@ import { StrongRef, rkeyFromUri } from "../atproto";
 import { listAllRecords, Repo } from "../repo";
 import { NSID } from "../lexicons";
 import { Checkbox, Field, Message, Msg, SelectField, clean, now } from "../ui";
+import { RecordCardShell, RecordDetailData, RecordDetailDialog } from "../RecordDetail";
 
 interface Rec {
   uri: string;
@@ -53,6 +54,7 @@ function normalizeDoi(value: string): string {
 export function ProjectsTab({ client }: { client: Repo }) {
   const [projects, setProjects] = useState<Rec[]>([]);
   const [selected, setSelected] = useState<Rec | null>(null);
+  const [detail, setDetail] = useState<RecordDetailData | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
 
   // new project form
@@ -167,7 +169,10 @@ export function ProjectsTab({ client }: { client: Repo }) {
         <div className="list">
           {projects.length === 0 && <div className="empty">まだプロジェクトがありません。</div>}
           {projects.map((p) => (
-            <div className="card" key={p.uri}>
+            <RecordCardShell
+              key={p.uri}
+              onOpen={() => setDetail({ title: p.value.name ?? "プロジェクト", uri: p.uri, cid: p.cid, value: p.value })}
+            >
               <div>
                 <div className="title">{p.value.name}</div>
                 <div className="meta">
@@ -178,20 +183,21 @@ export function ProjectsTab({ client }: { client: Repo }) {
               <div className="row">
                 <button
                   className="btn small ghost"
-                  onClick={() => setSelected(selected?.uri === p.uri ? null : p)}
+                  onClick={(event) => { event.stopPropagation(); setSelected(selected?.uri === p.uri ? null : p); }}
                 >
                   {selected?.uri === p.uri ? "閉じる" : "論文を管理"}
                 </button>
-                <button className="btn danger small" onClick={() => deleteProject(p)}>
+                <button className="btn danger small" onClick={(event) => { event.stopPropagation(); deleteProject(p); }}>
                   削除
                 </button>
               </div>
-            </div>
+            </RecordCardShell>
           ))}
         </div>
       </div>
 
       {selected && <ProjectPapers client={client} project={selected} />}
+      <RecordDetailDialog detail={detail} onClose={() => setDetail(null)} />
     </>
   );
 }
@@ -199,9 +205,10 @@ export function ProjectsTab({ client }: { client: Repo }) {
 // ---- papers within a project ----
 
 function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
-  const [items, setItems] = useState<{ item: Rec; ref: Rec | null }[]>([]);
+  const [items, setItems] = useState<{ item: Rec; ref: Rec | null; authorship: Rec | null }[]>([]);
   const [msg, setMsg] = useState<Msg>(null);
   const [busy, setBusy] = useState(false);
+  const [detail, setDetail] = useState<RecordDetailData | null>(null);
 
   // paper form
   const [type, setType] = useState("article-journal");
@@ -220,6 +227,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
   async function load() {
     try {
       const records = await listAllRecords(client, NSID.collectionItem);
+      const authorships = await listAllRecords(client, NSID.authorship).catch(() => []);
       const mine = records
         .map((r) => ({ uri: r.uri, cid: r.cid, value: r.value }))
         .filter((r) => r.value.collection?.uri === project.uri);
@@ -236,7 +244,10 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
               ref = null;
             }
           }
-          return { item: it, ref };
+          const authorship = refUri
+            ? (authorships.find((claim) => claim.value.reference?.uri === refUri) ?? null)
+            : null;
+          return { item: it, ref, authorship };
         }),
       );
       setItems(resolved);
@@ -350,6 +361,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
   }
 
   return (
+    <>
     <div className="panel" style={{ borderColor: "var(--accent)" }}>
       <h2>「{project.value.name}」の論文</h2>
       <p className="hint">
@@ -399,8 +411,24 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
 
       <div className="list">
         {items.length === 0 && <div className="empty">まだ論文がありません。</div>}
-        {items.map(({ item, ref }) => (
-          <div className="card" key={item.uri}>
+        {items.map(({ item, ref, authorship }) => (
+          <RecordCardShell
+            key={item.uri}
+            onOpen={() => setDetail({
+              title: ref?.value.title ?? "文献レコード",
+              uri: item.uri,
+              cid: item.cid,
+              value: {
+                collectionItemRecord: item.value,
+                referenceRecord: ref?.value ?? null,
+                referenceUri: ref?.uri ?? null,
+                referenceCid: ref?.cid ?? null,
+                authorshipRecord: authorship?.value ?? null,
+                authorshipUri: authorship?.uri ?? null,
+                authorshipCid: authorship?.cid ?? null,
+              },
+            })}
+          >
             <div>
               <div className="title">{ref?.value.title ?? "（参照解決できず）"}</div>
               <div className="meta">
@@ -408,12 +436,14 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
                 {[ref?.value.containerTitle, ref?.value.issued?.year].filter(Boolean).join(" · ")}
               </div>
             </div>
-            <button className="btn danger small" onClick={() => removeItem(item.uri)}>
+            <button className="btn danger small" onClick={(event) => { event.stopPropagation(); removeItem(item.uri); }}>
               外す
             </button>
-          </div>
+          </RecordCardShell>
         ))}
       </div>
     </div>
+    <RecordDetailDialog detail={detail} onClose={() => setDetail(null)} />
+    </>
   );
 }

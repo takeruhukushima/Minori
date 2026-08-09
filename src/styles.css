@@ -129,6 +129,9 @@ button.btn.danger { background: transparent; color: var(--danger); border: 1px s
 }
 .card .meta { color: var(--muted); font-size: 12px; margin-top: 3px; }
 .card .title { font-weight: 600; font-size: 14px; }
+.record-card { cursor: pointer; transition: border-color 120ms ease, transform 120ms ease; }
+.record-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+.record-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .tag {
   display: inline-block;
   background: var(--panel);
@@ -157,6 +160,55 @@ button.btn.danger { background: transparent; color: var(--danger); border: 1px s
 }
 .diagnostic .hint { margin-top: 2px; color: var(--muted); font-size: 12px; }
 .diagnostic .msg { grid-column: 1 / -1; margin-top: 0; }
+
+.detail-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(4, 7, 12, 0.78);
+  backdrop-filter: blur(4px);
+}
+.detail-dialog {
+  width: min(760px, 100%);
+  max-height: min(86vh, 900px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.detail-header h2 { margin: 2px 0 0; font-size: 18px; }
+.detail-eyebrow { color: var(--accent); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.detail-content { padding: 18px 20px 24px; overflow: auto; }
+.detail-fields { display: grid; gap: 10px; margin: 0; }
+.detail-field { min-width: 0; padding: 10px 12px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; }
+.detail-field dt { color: var(--muted); font-size: 12px; margin-bottom: 5px; }
+.detail-field dt code { margin-left: 6px; color: #738095; font-size: 10px; }
+.detail-field dd { margin: 0; min-width: 0; }
+.detail-field .detail-fields { margin-top: 4px; }
+.detail-array { margin: 0; padding-left: 22px; display: grid; gap: 8px; }
+.detail-value, .detail-field a { overflow-wrap: anywhere; white-space: pre-wrap; }
+.detail-null { color: var(--muted); font-style: italic; }
+.raw-record { margin-top: 16px; color: var(--muted); font-size: 12px; }
+.raw-record pre { overflow: auto; padding: 12px; color: var(--text); background: #0b0d11; border-radius: 8px; }
+
+@media (max-width: 600px) {
+  .detail-backdrop { padding: 0; place-items: end stretch; }
+  .detail-dialog { width: 100%; max-height: 92vh; border-radius: 14px 14px 0 0; }
+}
 
 .section-title { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .section-title h2 { margin: 0; }

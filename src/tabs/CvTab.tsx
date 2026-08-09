@@ -3,6 +3,7 @@ import { rkeyFromUri } from "../atproto";
 import { listAllRecords, Repo } from "../repo";
 import { NSID } from "../lexicons";
 import { Checkbox, Field, Message, Msg, SelectField, clean, now } from "../ui";
+import { RecordCardShell, RecordDetailData, RecordDetailDialog } from "../RecordDetail";
 
 type FieldType = "text" | "textarea" | "select" | "checkbox" | "org";
 
@@ -268,7 +269,8 @@ export function CvTab({ client }: { client: Repo }) {
 
 function Section({ client, def }: { client: Repo; def: SectionDef }) {
   const [values, setValues] = useState<Record<string, string | boolean>>({});
-  const [records, setRecords] = useState<{ uri: string; value: any }[]>([]);
+  const [records, setRecords] = useState<{ uri: string; cid: string; value: any }[]>([]);
+  const [detail, setDetail] = useState<RecordDetailData | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
 
@@ -279,7 +281,7 @@ function Section({ client, def }: { client: Repo; def: SectionDef }) {
   async function load() {
     try {
       const records = await listAllRecords(client, def.nsid);
-      setRecords(records.map((r) => ({ uri: r.uri, value: r.value })));
+      setRecords(records.map((r) => ({ uri: r.uri, cid: r.cid, value: r.value })));
     } catch {
       setRecords([]);
     }
@@ -359,6 +361,7 @@ function Section({ client, def }: { client: Repo; def: SectionDef }) {
   }
 
   return (
+    <>
     <div className="panel">
       <div className="section-title">
         <h2>
@@ -424,18 +427,23 @@ function Section({ client, def }: { client: Repo; def: SectionDef }) {
         {records.map((r) => {
           const { title, meta } = def.render(r.value);
           return (
-            <div className="card" key={r.uri}>
+            <RecordCardShell
+              key={r.uri}
+              onOpen={() => setDetail({ title, uri: r.uri, cid: r.cid, value: r.value })}
+            >
               <div>
                 <div className="title">{title}</div>
                 {meta && <div className="meta">{meta}</div>}
               </div>
-              <button className="btn danger small" onClick={() => remove(r.uri)}>
+              <button className="btn danger small" onClick={(event) => { event.stopPropagation(); remove(r.uri); }}>
                 削除
               </button>
-            </div>
+            </RecordCardShell>
           );
         })}
       </div>
     </div>
+    <RecordDetailDialog detail={detail} onClose={() => setDetail(null)} />
+    </>
   );
 }

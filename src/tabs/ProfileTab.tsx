@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Repo } from "../repo";
 import { NSID } from "../lexicons";
 import { Checkbox, Field, Message, Msg, clean, now } from "../ui";
+import { RecordDetailData, RecordDetailDialog } from "../RecordDetail";
 
 // id.career.profile — single record, rkey "self".
 export function ProfileTab({ client }: { client: Repo }) {
@@ -25,6 +26,8 @@ export function ProfileTab({ client }: { client: Repo }) {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
+  const [savedRecord, setSavedRecord] = useState<RecordDetailData | null>(null);
+  const [showDetail, setShowDetail] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -48,6 +51,7 @@ export function ProfileTab({ client }: { client: Repo }) {
         setAcceptingStudents(!!v.acceptingStudents);
         setOpenToCollaboration(!!v.openToCollaboration);
         setCreatedAt(v.createdAt ?? null);
+        setSavedRecord({ title: v.displayName ?? "CVプロフィール", uri: rec.uri, cid: rec.cid, value: v });
       } catch {
         // no profile yet — that's fine
       } finally {
@@ -94,6 +98,7 @@ export function ProfileTab({ client }: { client: Repo }) {
         throw new Error("PDS read-after-write verification failed");
       }
       setCreatedAt(record.createdAt);
+      setSavedRecord({ title: record.displayName ?? "CVプロフィール", uri: verified.uri, cid: verified.cid, value: verified.value });
       setMsg({ kind: "ok", text: "プロフィールを PDS に保存し、読み戻し検証に成功しました。" });
     } catch (err: any) {
       setMsg({ kind: "err", text: `保存失敗: ${err?.message ?? err}` });
@@ -105,6 +110,7 @@ export function ProfileTab({ client }: { client: Repo }) {
   if (loading) return <div className="panel">読み込み中…</div>;
 
   return (
+    <>
     <form className="panel" onSubmit={save}>
       <h2>CV プロフィール</h2>
       <p className="hint">
@@ -152,8 +158,15 @@ export function ProfileTab({ client }: { client: Repo }) {
         <button className="btn" type="submit" disabled={busy}>
           {busy ? "保存中…" : createdAt ? "更新する" : "作成する"}
         </button>
+        {savedRecord && (
+          <button className="btn ghost" type="button" onClick={() => setShowDetail(true)}>
+            公開レコードを確認
+          </button>
+        )}
       </div>
       <Message msg={msg} />
     </form>
+    <RecordDetailDialog detail={showDetail ? savedRecord : null} onClose={() => setShowDetail(false)} />
+    </>
   );
 }
