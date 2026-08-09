@@ -248,7 +248,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
   const [arxivId, setArxivId] = useState("");
   const [url, setUrl] = useState("");
   // authorship
-  const [claim, setClaim] = useState(true);
+  const [claim, setClaim] = useState(false);
   const [outputCategory, setOutputCategory] = useState("article");
   const [isFeatured, setIsFeatured] = useState(false);
 
@@ -306,7 +306,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
     setDoi("");
     setArxivId("");
     setUrl("");
-    setClaim(true);
+    setClaim(false);
     setOutputCategory("article");
     setIsFeatured(false);
     setEditingPaper(null);

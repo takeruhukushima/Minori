@@ -283,6 +283,7 @@ function PublicationsSection({ client }: { client: Repo }) {
   const [url, setUrl] = useState("");
   const [category, setCategory] = useState("article");
   const [featured, setFeatured] = useState(false);
+  const [claim, setClaim] = useState(true);
   const [editing, setEditing] = useState<{ authorship: any; reference: any } | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
@@ -307,6 +308,7 @@ function PublicationsSection({ client }: { client: Repo }) {
   function reset() {
     setTitle(""); setType("article-journal"); setAuthors(""); setVenue(""); setYear("");
     setDoi(""); setUrl(""); setCategory("article"); setFeatured(false);
+    setClaim(true);
     setEditing(null);
   }
 
@@ -318,6 +320,7 @@ function PublicationsSection({ client }: { client: Repo }) {
     setVenue(value.containerTitle ?? ""); setYear(value.issued?.year ? String(value.issued.year) : "");
     setDoi(value.doi ?? ""); setUrl(value.url ?? "");
     setCategory(entry.authorship.value.outputCategory ?? "article"); setFeatured(!!entry.authorship.value.isFeatured);
+    setClaim(true);
     setEditing({ authorship: entry.authorship, reference: entry.reference }); setMsg(null);
     document.getElementById("cv-publications")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -349,7 +352,11 @@ function PublicationsSection({ client }: { client: Repo }) {
         createdAt: editing?.authorship.value.createdAt ?? now(),
       };
       if (editing) {
-        await client.putRecord(NSID.authorship, rkeyFromUri(editing.authorship.uri), authorshipRecord);
+        if (claim) {
+          await client.putRecord(NSID.authorship, rkeyFromUri(editing.authorship.uri), authorshipRecord);
+        } else {
+          await client.deleteRecord(NSID.authorship, rkeyFromUri(editing.authorship.uri));
+        }
         const linkedItems = (await listAllRecords(client, NSID.collectionItem)).filter((record) => record.value.reference?.uri === editing.reference.uri);
         await Promise.all(linkedItems.map((record) => client.putRecord(NSID.collectionItem, rkeyFromUri(record.uri), {
           ...record.value, reference: referenceRef,
@@ -359,7 +366,7 @@ function PublicationsSection({ client }: { client: Repo }) {
       }
       const wasEditing = !!editing;
       reset(); await load();
-      setMsg({ kind: "ok", text: `論文・出版物を${wasEditing ? "更新" : "CVへ登録"}しました。` });
+      setMsg({ kind: "ok", text: wasEditing && !claim ? "文献情報を更新し、自分の業績から外しました。" : `論文・出版物を${wasEditing ? "更新" : "CVへ登録"}しました。` });
     } catch (error: any) {
       if (referenceRef && !editing) await client.deleteRecord(NSID.reference, rkeyFromUri(referenceRef.uri)).catch(() => {});
       setMsg({ kind: "err", text: `登録失敗: ${error?.message ?? error}` });
@@ -388,8 +395,11 @@ function PublicationsSection({ client }: { client: Repo }) {
           </div>
           <div style={{ marginTop: 12 }}><Field label="著者（カンマ、;、改行区切り）" value={authors} onChange={setAuthors} textarea /></div>
           <div className="row" style={{ marginTop: 12 }}>
-            <SelectField label="CV区分" value={category} onChange={setCategory} options={OUTPUT_CATEGORIES} />
-            <Checkbox label="主要業績" checked={featured} onChange={setFeatured} />
+            {editing && <Checkbox label="自分の業績として登録" checked={claim} onChange={setClaim} />}
+            {(!editing || claim) && <>
+              <SelectField label="CV区分" value={category} onChange={setCategory} options={OUTPUT_CATEGORIES} />
+              <Checkbox label="主要業績" checked={featured} onChange={setFeatured} />
+            </>}
           </div>
           <div className="toolbar">
             <button className="btn" disabled={busy}>{busy ? "保存中…" : editing ? "論文・出版物を更新" : "論文・出版物を登録"}</button>
