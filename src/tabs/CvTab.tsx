@@ -360,6 +360,19 @@ function Section({ client, def }: { client: Repo; def: SectionDef }) {
     }
   }
 
+  async function update(uri: string, record: Record<string, unknown>) {
+    if (record.$type !== def.nsid) throw new Error(`$type は ${def.nsid} にしてください。`);
+    const validationError = validate(record);
+    if (validationError) throw new Error(validationError);
+    const written = await client.putRecord(def.nsid, rkeyFromUri(uri), record);
+    const verified = await client.getRecord(def.nsid, rkeyFromUri(uri));
+    if (verified.uri !== written.uri || (verified.cid && verified.cid !== written.cid)) {
+      throw new Error("PDS read-after-write verification failed");
+    }
+    await load();
+    setMsg({ kind: "ok", text: `${def.title}を更新しました。` });
+  }
+
   return (
     <>
     <div className="panel">
@@ -443,7 +456,12 @@ function Section({ client, def }: { client: Repo; def: SectionDef }) {
         })}
       </div>
     </div>
-    <RecordDetailDialog detail={detail} onClose={() => setDetail(null)} />
+    <RecordDetailDialog
+      detail={detail}
+      onClose={() => setDetail(null)}
+      onSave={detail?.uri ? (value) => update(detail.uri!, value) : undefined}
+      onDelete={detail?.uri ? () => remove(detail.uri!) : undefined}
+    />
     </>
   );
 }

@@ -116,7 +116,6 @@ export function ProjectsTab({ client }: { client: Repo }) {
   }
 
   async function deleteProject(p: Rec) {
-    if (!confirm(`プロジェクト「${p.value.name}」を削除しますか？（論文レコード自体は残ります）`)) return;
     try {
       const allItems = await listAllRecords(client, NSID.collectionItem);
       const memberships = allItems.filter((item) => item.value.collection?.uri === p.uri);
@@ -134,6 +133,13 @@ export function ProjectsTab({ client }: { client: Repo }) {
     } catch (err: any) {
       setMsg({ kind: "err", text: `削除失敗: ${err?.message ?? err}` });
     }
+  }
+
+  async function updateProject(p: Rec, value: Record<string, unknown>) {
+    if (value.$type !== NSID.collection) throw new Error(`$type は ${NSID.collection} にしてください。`);
+    await client.putRecord(NSID.collection, rkeyFromUri(p.uri), value);
+    await loadProjects();
+    setMsg({ kind: "ok", text: "プロジェクトを更新しました。" });
   }
 
   return (
@@ -187,7 +193,7 @@ export function ProjectsTab({ client }: { client: Repo }) {
                 >
                   {selected?.uri === p.uri ? "閉じる" : "論文を管理"}
                 </button>
-                <button className="btn danger small" onClick={(event) => { event.stopPropagation(); deleteProject(p); }}>
+                <button className="btn danger small" onClick={(event) => { event.stopPropagation(); if (confirm(`プロジェクト「${p.value.name}」を削除しますか？（論文レコード自体は残ります）`)) deleteProject(p); }}>
                   削除
                 </button>
               </div>
@@ -197,7 +203,20 @@ export function ProjectsTab({ client }: { client: Repo }) {
       </div>
 
       {selected && <ProjectPapers client={client} project={selected} />}
-      <RecordDetailDialog detail={detail} onClose={() => setDetail(null)} />
+      <RecordDetailDialog
+        detail={detail}
+        onClose={() => setDetail(null)}
+        onSave={detail?.uri ? (value) => {
+          const project = projects.find((candidate) => candidate.uri === detail.uri);
+          if (!project) throw new Error("プロジェクトが見つかりません。");
+          return updateProject(project, value);
+        } : undefined}
+        onDelete={detail?.uri ? () => {
+          const project = projects.find((candidate) => candidate.uri === detail.uri);
+          if (!project) throw new Error("プロジェクトが見つかりません。");
+          return deleteProject(project);
+        } : undefined}
+      />
     </>
   );
 }
@@ -360,6 +379,35 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
     }
   }
 
+  async function updatePaper(reference: Rec, value: Record<string, unknown>) {
+    if (value.$type !== NSID.reference) throw new Error(`$type は ${NSID.reference} にしてください。`);
+    await client.putRecord(NSID.reference, rkeyFromUri(reference.uri), value);
+    await load();
+    setMsg({ kind: "ok", text: "論文レコードを更新しました。" });
+  }
+
+  async function deletePaper(item: Rec, reference: Rec | null, authorship: Rec | null) {
+    const referenceUri = reference?.uri ?? item.value.reference?.uri;
+    const [allItems, allAuthorships] = referenceUri
+      ? await Promise.all([
+        listAllRecords(client, NSID.collectionItem),
+        listAllRecords(client, NSID.authorship).catch(() => []),
+      ])
+      : [[], []];
+    const targets = referenceUri ? [
+      ...allAuthorships.filter((record) => record.value.reference?.uri === referenceUri).map((record) => ({ collection: NSID.authorship, uri: record.uri })),
+      ...allItems.filter((record) => record.value.reference?.uri === referenceUri).map((record) => ({ collection: NSID.collectionItem, uri: record.uri })),
+      ...(reference ? [{ collection: NSID.reference, uri: reference.uri }] : []),
+    ] : [
+      ...(authorship ? [{ collection: NSID.authorship, uri: authorship.uri }] : []),
+      { collection: NSID.collectionItem, uri: item.uri },
+    ];
+    const results = await Promise.allSettled(targets.map((target) => client.deleteRecord(target.collection, rkeyFromUri(target.uri))));
+    if (results.some((result) => result.status === "rejected")) throw new Error("関連レコードの一部を削除できませんでした。");
+    await load();
+    setMsg({ kind: "ok", text: "論文と関連する所属・著者レコードを削除しました。" });
+  }
+
   return (
     <>
     <div className="panel" style={{ borderColor: "var(--accent)" }}>
@@ -418,6 +466,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
               title: ref?.value.title ?? "文献レコード",
               uri: item.uri,
               cid: item.cid,
+              editableValue: ref?.value,
               value: {
                 collectionItemRecord: item.value,
                 referenceRecord: ref?.value ?? null,
@@ -443,7 +492,20 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
         ))}
       </div>
     </div>
-    <RecordDetailDialog detail={detail} onClose={() => setDetail(null)} />
+    <RecordDetailDialog
+      detail={detail}
+      onClose={() => setDetail(null)}
+      onSave={detail ? async (value) => {
+        const entry = items.find(({ item }) => item.uri === detail.uri);
+        if (!entry?.ref) throw new Error("編集対象の論文レコードが見つかりません。");
+        await updatePaper(entry.ref, value);
+      } : undefined}
+      onDelete={detail ? async () => {
+        const entry = items.find(({ item }) => item.uri === detail.uri);
+        if (!entry) throw new Error("削除対象の論文レコードが見つかりません。");
+        await deletePaper(entry.item, entry.ref, entry.authorship);
+      } : undefined}
+    />
     </>
   );
 }

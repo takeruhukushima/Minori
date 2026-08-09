@@ -204,6 +204,20 @@ button.btn.danger { background: transparent; color: var(--danger); border: 1px s
 .detail-null { color: var(--muted); font-style: italic; }
 .raw-record { margin-top: 16px; color: var(--muted); font-size: 12px; }
 .raw-record pre { overflow: auto; padding: 12px; color: var(--text); background: #0b0d11; border-radius: 8px; }
+.detail-editor { display: grid; gap: 8px; color: var(--muted); font-size: 12px; }
+.detail-editor textarea {
+  min-height: 360px;
+  resize: vertical;
+  padding: 12px;
+  color: var(--text);
+  background: #0b0d11;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: 12px/1.55 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.detail-editor textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.detail-actions { justify-content: flex-end; }
+.detail-actions .danger { margin-right: auto; }
 
 @media (max-width: 600px) {
   .detail-backdrop { padding: 0; place-items: end stretch; }

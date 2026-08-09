@@ -17,6 +17,8 @@ describe("RecordDetailDialog", () => {
           },
         }}
         onClose={vi.fn()}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
       />,
     );
     expect(html).toContain("pub.paper.reference");
@@ -25,5 +27,7 @@ describe("RecordDetailDialog", () => {
     expect(html).toContain("corresponding");
     expect(html).toContain("2026");
     expect(html).toContain("Raw JSON");
+    expect(html).toContain("編集");
+    expect(html).toContain("削除");
   });
 });
