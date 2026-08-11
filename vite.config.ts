@@ -58,7 +58,7 @@ export default defineConfig(({ mode }) => {
     env.VITE_PUBLIC_URL || env.CF_PAGES_URL || "https://minori.takeruf.workers.dev";
   return {
     plugins: [react(), oauthMetadata(publicUrl)],
-    server: { port: 5173 },
+    server: { host: "127.0.0.1", port: 5173 },
     build: {
       rollupOptions: {
         output: { manualChunks: { atproto: ["@atproto/api", "@atproto/oauth-client-browser"] } },
