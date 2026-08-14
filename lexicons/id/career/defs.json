@@ -3,6 +3,44 @@
   "id": "id.career.defs",
   "description": "Shared object definitions for academic CV records. Date shapes and organisation-reference conventions deliberately mirror id.sifa.* so that records from both namespaces can be merged into one profile without translation.",
   "defs": {
+    "languageText": {
+      "type": "object",
+      "description": "One language variant of display text.",
+      "required": [
+        "language",
+        "value"
+      ],
+      "properties": {
+        "language": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "BCP-47 language tag for this text variant, e.g. 'ja', 'en', or 'zh-Hant'."
+        },
+        "value": {
+          "type": "string",
+          "maxLength": 20000,
+          "maxGraphemes": 5000
+        }
+      }
+    },
+    "keywordConcept": {
+      "type": "object",
+      "description": "One keyword concept with equal language-specific expressions of the same concept, not separate keywords.",
+      "required": [
+        "variants"
+      ],
+      "properties": {
+        "variants": {
+          "type": "array",
+          "minLength": 1,
+          "maxLength": 20,
+          "items": {
+            "type": "ref",
+            "ref": "id.career.defs#languageText"
+          }
+        }
+      }
+    },
     "organization": {
       "type": "object",
       "description": "Reference to an institution, funder, publisher, or society. NEVER key on `name`: it is a display string that varies by language, era, and abbreviation. Identity comes from `ror` or `wikidata`. Mirrors the id.sifa.* entityRef convention.",
@@ -11,10 +49,14 @@
       ],
       "properties": {
         "name": {
-          "type": "string",
-          "maxLength": 1000,
-          "maxGraphemes": 100,
-          "description": "Display name in the record's locale. Not an identifier."
+          "type": "array",
+          "minLength": 1,
+          "maxLength": 20,
+          "items": {
+            "type": "ref",
+            "ref": "id.career.defs#languageText"
+          },
+          "description": "Equal language variants of the display name. Not an identifier."
         },
         "ror": {
           "type": "string",
@@ -31,9 +73,13 @@
           "maxLength": 32
         },
         "department": {
-          "type": "string",
-          "maxLength": 1000,
-          "maxGraphemes": 100,
+          "type": "array",
+          "minLength": 1,
+          "maxLength": 20,
+          "items": {
+            "type": "ref",
+            "ref": "id.career.defs#languageText"
+          },
           "description": "Faculty, department, or lab. Free text: departmental identifiers are not standardised."
         },
         "country": {
@@ -61,9 +107,13 @@
           "description": "Bare ORCID iD."
         },
         "name": {
-          "type": "string",
-          "maxLength": 640,
-          "maxGraphemes": 64,
+          "type": "array",
+          "minLength": 1,
+          "maxLength": 20,
+          "items": {
+            "type": "ref",
+            "ref": "id.career.defs#languageText"
+          },
           "description": "Display name. Requires the person's consent when they are not a public co-author of a published work."
         },
         "affiliation": {
@@ -112,9 +162,13 @@
           "maxLength": 64
         },
         "label": {
-          "type": "string",
-          "maxLength": 500,
-          "maxGraphemes": 100
+          "type": "array",
+          "minLength": 1,
+          "maxLength": 20,
+          "items": {
+            "type": "ref",
+            "ref": "id.career.defs#languageText"
+          }
         }
       }
     },
@@ -149,9 +203,13 @@
           "format": "uri"
         },
         "label": {
-          "type": "string",
-          "maxLength": 300,
-          "maxGraphemes": 60
+          "type": "array",
+          "minLength": 1,
+          "maxLength": 20,
+          "items": {
+            "type": "ref",
+            "ref": "id.career.defs#languageText"
+          }
         }
       }
     },
@@ -192,10 +250,14 @@
           "description": "Collection NSID to draw from, e.g. 'id.career.grant' or 'id.sifa.profile.position'."
         },
         "title": {
-          "type": "string",
-          "maxLength": 500,
-          "maxGraphemes": 100,
-          "description": "Heading text in the dossier's locale, e.g. 'Publications' or '研究業績'."
+          "type": "array",
+          "minLength": 1,
+          "maxLength": 20,
+          "items": {
+            "type": "ref",
+            "ref": "id.career.defs#languageText"
+          },
+          "description": "Equal language variants of the heading text, e.g. 'Publications' and '研究業績'."
         },
         "order": {
           "type": "integer",

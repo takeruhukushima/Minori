@@ -3,8 +3,10 @@ import { rkeyFromUri, XrpcError } from "./atproto";
 import { NSID } from "./lexicons";
 import { Repo } from "./repo";
 import { Message, Msg, now } from "./ui";
+import { useI18n } from "./i18n";
 
 export function PdsDiagnostic({ client }: { client: Repo }) {
+  const { text } = useI18n();
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<Msg>(null);
 
@@ -12,12 +14,12 @@ export function PdsDiagnostic({ client }: { client: Repo }) {
     setBusy(true);
     setMsg(null);
     try {
-      await verifyPdsWrite(client);
-      setMsg({ kind: "ok", text: "PDSへの作成・読み戻し・削除に成功しました。書き込み接続は正常です。" });
+      await verifyPdsWrite(client, text);
+      setMsg({ kind: "ok", text: text("PDSへの作成・読み戻し・削除に成功しました。書き込み接続は正常です。", "Creating, reading, and deleting a PDS record succeeded. The write connection is working.") });
     } catch (error: any) {
       setMsg({
         kind: "err",
-        text: `PDS診断に失敗しました: ${error?.message ?? error}${error?.orphanUri ? `（一時レコードが残った可能性があります: ${error.orphanUri}）` : ""}`,
+        text: `${text("PDS診断に失敗しました", "PDS diagnostic failed")}: ${error?.message ?? error}${error?.orphanUri ? text(`（一時レコードが残った可能性があります: ${error.orphanUri}）`, ` (A temporary record may remain: ${error.orphanUri})`) : ""}`,
       });
     } finally {
       setBusy(false);
@@ -27,18 +29,21 @@ export function PdsDiagnostic({ client }: { client: Repo }) {
   return (
     <div className="diagnostic">
       <div>
-        <strong>PDS 書き込み診断</strong>
-        <div className="hint">一時レコードを作成・読み戻し・削除します。PDS上のデータは公開です。</div>
+        <strong>{text("PDS 書き込み診断", "PDS write diagnostic")}</strong>
+        <div className="hint">{text("一時レコードを作成・読み戻し・削除します。PDS上のデータは公開です。", "Creates, reads, and deletes a temporary record. Data on your PDS is public.")}</div>
       </div>
       <button className="btn ghost small" type="button" disabled={busy} onClick={verify}>
-        {busy ? "診断中…" : "接続を検証"}
+        {busy ? text("診断中…", "Checking...") : text("接続を検証", "Verify connection")}
       </button>
       <Message msg={msg} />
     </div>
   );
 }
 
-export async function verifyPdsWrite(client: Repo): Promise<void> {
+export async function verifyPdsWrite(
+  client: Repo,
+  text: (ja: string, en: string) => string = (ja) => ja,
+): Promise<void> {
   let uri: string | null = null;
   try {
     const createdAt = now();
@@ -54,14 +59,14 @@ export async function verifyPdsWrite(client: Repo): Promise<void> {
     const rkey = rkeyFromUri(written.uri);
     const read = await client.getRecord(NSID.collection, rkey);
     if (read.uri !== written.uri || read.cid !== written.cid || read.value.createdAt !== createdAt) {
-      throw new Error("読み戻したレコードが書き込み結果と一致しません");
+      throw new Error(text("読み戻したレコードが書き込み結果と一致しません", "The record read from the PDS does not match the write result"));
     }
 
     await client.deleteRecord(NSID.collection, rkey);
     uri = null;
     try {
       await client.getRecord(NSID.collection, rkey);
-      throw new Error("診断レコードが削除後もPDSに残っています");
+      throw new Error(text("診断レコードが削除後もPDSに残っています", "The diagnostic record remains on the PDS after deletion"));
     } catch (error) {
       if (!isRecordMissing(error)) throw error;
     }

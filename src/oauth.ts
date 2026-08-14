@@ -18,6 +18,7 @@ const WRITE_COLLECTIONS = [
   "pub.paper.reference",
   "pub.paper.collection",
   "pub.paper.collectionItem",
+  "pub.paper.readingStatus",
   "id.career.profile",
   "id.career.education",
   "id.career.authorship",

@@ -13,7 +13,7 @@ export interface Repo {
   ): Promise<{ records: { uri: string; cid: string; value: any }[]; cursor?: string }>;
   getRecord(collection: string, rkey: string): Promise<{ uri: string; cid: string; value: any }>;
   createRecord(collection: string, record: Record<string, unknown>, rkey?: string): Promise<StrongRef>;
-  putRecord(collection: string, rkey: string, record: Record<string, unknown>): Promise<StrongRef>;
+  putRecord(collection: string, rkey: string, record: Record<string, unknown>, swapRecord?: string): Promise<StrongRef>;
   deleteRecord(collection: string, rkey: string): Promise<void>;
 }
 
@@ -65,12 +65,13 @@ export class AgentRepo implements Repo {
     return { uri: r.data.uri, cid: r.data.cid };
   }
 
-  async putRecord(collection: string, rkey: string, record: Record<string, unknown>): Promise<StrongRef> {
+  async putRecord(collection: string, rkey: string, record: Record<string, unknown>, swapRecord?: string): Promise<StrongRef> {
     const r = await this.agent.com.atproto.repo.putRecord({
       repo: this.did,
       collection,
       rkey,
       record,
+      ...(swapRecord ? { swapRecord } : {}),
     });
     return { uri: r.data.uri, cid: r.data.cid };
   }

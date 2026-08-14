@@ -21,7 +21,7 @@
           "startedAt": { "type": "string", "format": "datetime" },
           "finishedAt": { "type": "string", "format": "datetime" },
           "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
-          "note": { "type": "string", "maxLength": 20000, "maxGraphemes": 4000, "description": "Reading notes. For passage-level highlights prefer linking to a dedicated annotation app rather than growing this field -- annotation is solved elsewhere in the network." },
+          "note": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "pub.paper.defs#languageText" }, "description": "Equal language variants of reading notes. For passage-level highlights prefer linking to a dedicated annotation app rather than growing this field -- annotation is solved elsewhere in the network." },
           "shelfLife": { "type": "string", "knownValues": ["active", "archived"], "description": "Lets a client hide a stale to-read pile without deleting it. The pile always wins; plan for it." },
           "labels": { "type": "union", "refs": ["com.atproto.label.defs#selfLabels"] },
           "createdAt": { "type": "string", "format": "datetime" },

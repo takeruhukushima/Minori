@@ -1,21 +1,22 @@
 import { useEffect, useState } from "react";
+import { useI18n } from "./i18n";
 
-const LABELS: Record<string, string> = {
-  "$type": "レコード種別",
-  createdAt: "作成日時",
-  updatedAt: "更新日時",
-  addedAt: "追加日時",
-  title: "タイトル",
-  name: "名称",
-  description: "説明",
-  institution: "機関",
-  organization: "組織",
-  company: "組織名",
-  contributors: "著者・貢献者",
-  reference: "文献参照",
-  collection: "プロジェクト参照",
-  uri: "AT URI",
-  cid: "CID",
+const LABELS: Record<string, [string, string]> = {
+  "$type": ["レコード種別", "Record type"],
+  createdAt: ["作成日時", "Created at"],
+  updatedAt: ["更新日時", "Updated at"],
+  addedAt: ["追加日時", "Added at"],
+  title: ["タイトル", "Title"],
+  name: ["名称", "Name"],
+  description: ["説明", "Description"],
+  institution: ["機関", "Institution"],
+  organization: ["組織", "Organization"],
+  company: ["組織名", "Organization name"],
+  contributors: ["著者・貢献者", "Authors and contributors"],
+  reference: ["文献参照", "Publication reference"],
+  collection: ["プロジェクト参照", "Project reference"],
+  uri: ["AT URI", "AT URI"],
+  cid: ["CID", "CID"],
 };
 
 export interface RecordDetailData {
@@ -36,6 +37,7 @@ export function RecordDetailDialog({
   onEdit?: () => void;
   onDelete?: () => Promise<void>;
 }) {
+  const { text } = useI18n();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -59,7 +61,7 @@ export function RecordDetailDialog({
   };
 
   async function remove() {
-    if (!onDelete || !detail || !confirm(`「${detail.title}」をPDSから削除しますか？`)) return;
+    if (!onDelete || !detail || !confirm(text(`「${detail.title}」をPDSから削除しますか？`, `Delete "${detail.title}" from the PDS?`))) return;
     setError("");
     try {
       setBusy(true);
@@ -83,11 +85,11 @@ export function RecordDetailDialog({
       >
         <header className="detail-header">
           <div>
-            <div className="detail-eyebrow">公開レコードの詳細</div>
+            <div className="detail-eyebrow">{text("公開レコードの詳細", "Public record details")}</div>
             <h2 id="record-detail-title">{detail.title}</h2>
           </div>
-          <button className="btn ghost small" type="button" onClick={onClose} aria-label="詳細を閉じる">
-            閉じる
+          <button className="btn ghost small" type="button" onClick={onClose} aria-label={text("詳細を閉じる", "Close details")}>
+            {text("閉じる", "Close")}
           </button>
         </header>
         <div className="detail-content">
@@ -95,12 +97,12 @@ export function RecordDetailDialog({
           {error && <div className="msg err">{error}</div>}
           {(onEdit || onDelete) && (
             <div className="toolbar detail-actions">
-              {onEdit && <button className="btn ghost" type="button" onClick={() => { onEdit(); onClose(); }}>フォームで編集</button>}
-              {onDelete && <button className="btn danger" type="button" disabled={busy} onClick={remove}>削除</button>}
+              {onEdit && <button className="btn ghost" type="button" onClick={() => { onEdit(); onClose(); }}>{text("フォームで編集", "Edit in form")}</button>}
+              {onDelete && <button className="btn danger" type="button" disabled={busy} onClick={remove}>{text("削除", "Delete")}</button>}
             </div>
           )}
           <details className="raw-record">
-            <summary>Raw JSON</summary>
+            <summary>{text("JSON（未加工）", "Raw JSON")}</summary>
             <pre>{JSON.stringify(completeValue, null, 2)}</pre>
           </details>
         </div>
@@ -137,12 +139,13 @@ export function RecordCardShell({
 }
 
 function DetailObject({ value }: { value: Record<string, unknown> }) {
+  const { text } = useI18n();
   return (
     <dl className="detail-fields">
       {Object.entries(value).map(([key, item]) => (
         <div className="detail-field" key={key}>
           <dt>
-            {LABELS[key] ?? humanize(key)} <code>{key}</code>
+            {LABELS[key] ? text(...LABELS[key]) : humanize(key)} <code>{key}</code>
           </dt>
           <dd><DetailValue value={item} /></dd>
         </div>
@@ -152,6 +155,7 @@ function DetailObject({ value }: { value: Record<string, unknown> }) {
 }
 
 function DetailValue({ value }: { value: unknown }) {
+  const { text } = useI18n();
   if (value === null) return <span className="detail-null">null</span>;
   if (value === undefined) return <span className="detail-null">undefined</span>;
   if (Array.isArray(value)) {
@@ -163,10 +167,10 @@ function DetailValue({ value }: { value: unknown }) {
     );
   }
   if (isObject(value)) return <DetailObject value={value} />;
-  if (typeof value === "boolean") return <span>{value ? "はい (true)" : "いいえ (false)"}</span>;
-  const text = String(value);
-  if (/^https?:\/\//.test(text)) return <a href={text} target="_blank" rel="noreferrer">{text}</a>;
-  return <span className="detail-value">{text}</span>;
+  if (typeof value === "boolean") return <span>{value ? text("はい (true)", "Yes (true)") : text("いいえ (false)", "No (false)")}</span>;
+  const displayValue = String(value);
+  if (/^https?:\/\//.test(displayValue)) return <a href={displayValue} target="_blank" rel="noreferrer">{displayValue}</a>;
+  return <span className="detail-value">{displayValue}</span>;
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {

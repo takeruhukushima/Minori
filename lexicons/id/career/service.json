@@ -43,9 +43,10 @@
             "description": "'academyMember' covers 日本学術会議 連携会員/会員 and equivalent national academy appointments; 'governmentCommittee' covers 審議会・委員会 appointments. Both are 委員歴 in researchmap, which is a separate CV section from peer review and editorial work -- a dossier separates them via sectionSpec.includeTypes rather than via separate record types."
           },
           "venue": {
-            "type": "string",
-            "maxLength": 1000,
-            "maxGraphemes": 200,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" },
             "description": "Journal, conference, society, or funding body as it should be printed."
           },
           "venueOrg": {
@@ -53,9 +54,10 @@
             "ref": "id.career.defs#organization"
           },
           "roleTitle": {
-            "type": "string",
-            "maxLength": 500,
-            "maxGraphemes": 100,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" },
             "description": "Free-text title for roles the enum cannot capture, e.g. '理事', 'Treasurer', 'Diversity Chair'."
           },
           "startedAt": {
@@ -89,9 +91,10 @@
             "description": "Link to an external recognition record (ORCID peer-review record, Web of Science Reviewer Recognition). These systems already publish counts without identifying manuscripts, so citing them adds credibility at no privacy cost."
           },
           "note": {
-            "type": "string",
-            "maxLength": 4000,
-            "maxGraphemes": 800
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" }
           },
           "createdAt": {
             "type": "string",

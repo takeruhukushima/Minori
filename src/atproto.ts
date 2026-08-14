@@ -180,9 +180,9 @@ export class Client {
     return { uri: data.uri, cid: data.cid };
   }
 
-  async putRecord(collection: string, rkey: string, record: Record<string, unknown>): Promise<StrongRef> {
+  async putRecord(collection: string, rkey: string, record: Record<string, unknown>, swapRecord?: string): Promise<StrongRef> {
     const data = await this.call("POST", "com.atproto.repo.putRecord", {
-      body: { repo: this.session.did, collection, rkey, record },
+      body: { repo: this.session.did, collection, rkey, record, ...(swapRecord ? { swapRecord } : {}) },
     });
     return { uri: data.uri, cid: data.cid };
   }
