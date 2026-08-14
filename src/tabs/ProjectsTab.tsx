@@ -1,26 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { StrongRef, rkeyFromUri } from "../atproto";
+import { useI18n } from "../i18n";
+import { LanguageText, normalizeLanguageTexts, pickLanguageText } from "../languageText";
 import { listAllRecords, Repo } from "../repo";
 import { NSID } from "../lexicons";
-import { Checkbox, Field, Message, Msg, SelectField, clean, now } from "../ui";
+import { Checkbox, Field, LanguageTextField, Message, Msg, SelectField, clean, now } from "../ui";
 import { RecordCardShell, RecordDetailData, RecordDetailDialog } from "../RecordDetail";
+import { repairCurrentStrongRefs } from "../migration";
 
 interface Rec {
   uri: string;
   cid: string;
   value: any;
 }
-
-const PURPOSES = [
-  { value: "", label: "（未選択）" },
-  { value: "writing", label: "執筆中 (writing)" },
-  { value: "reading", label: "積読・購読 (reading)" },
-  { value: "teaching", label: "講義 (teaching)" },
-  { value: "topic", label: "トピック (topic)" },
-  { value: "systematicReview", label: "SR (systematicReview)" },
-  { value: "grantApplication", label: "申請 (grantApplication)" },
-  { value: "thesis", label: "学位論文 (thesis)" },
-];
 
 const CSL_TYPES = [
   "article-journal",
@@ -36,13 +28,6 @@ const CSL_TYPES = [
   "manuscript",
 ].map((v) => ({ value: v, label: v }));
 
-const OUTPUT_CATS = [
-  { value: "article", label: "論文 (article)" },
-  { value: "misc", label: "MISC" },
-  { value: "book", label: "書籍 (book)" },
-  { value: "other", label: "その他 (other)" },
-];
-
 function normalizeDoi(value: string): string {
   return value
     .trim()
@@ -51,7 +36,28 @@ function normalizeDoi(value: string): string {
     .toLowerCase();
 }
 
+function languageTexts(value: unknown): LanguageText[] {
+  if (typeof value === "string") {
+    const legacy = value.trim();
+    return legacy ? [{ language: "und", value: legacy }] : [];
+  }
+  return normalizeLanguageTexts(value);
+}
+
+function contributorNames(contributors: any[]): LanguageText[] {
+  const names = contributors.map((person) => languageTexts(person.literal ?? person.name));
+  const languages = [...new Set(names.flatMap((variants) => variants.map((variant) => variant.language)))];
+  return languages.map((language) => ({
+    language,
+    value: names
+      .map((variants) => variants.find((variant) => variant.language === language)?.value ?? "")
+      .join("\n")
+      .trim(),
+  })).filter((variant) => variant.value);
+}
+
 export function ProjectsTab({ client }: { client: Repo }) {
+  const { locale, text } = useI18n();
   const [projects, setProjects] = useState<Rec[]>([]);
   const [selected, setSelected] = useState<Rec | null>(null);
   const [detail, setDetail] = useState<RecordDetailData | null>(null);
@@ -59,11 +65,21 @@ export function ProjectsTab({ client }: { client: Repo }) {
   const [msg, setMsg] = useState<Msg>(null);
 
   // new project form
-  const [pName, setPName] = useState("");
-  const [pDesc, setPDesc] = useState("");
+  const [pName, setPName] = useState<LanguageText[]>([]);
+  const [pDesc, setPDesc] = useState<LanguageText[]>([]);
   const [pPurpose, setPPurpose] = useState("writing");
-  const [pVenue, setPVenue] = useState("");
+  const [pVenue, setPVenue] = useState<LanguageText[]>([]);
   const [creatingP, setCreatingP] = useState(false);
+  const purposes = [
+    { value: "", label: text("（未選択）", "(Not selected)") },
+    { value: "writing", label: text("執筆中 (writing)", "Writing (writing)") },
+    { value: "reading", label: text("積読・購読 (reading)", "Reading list (reading)") },
+    { value: "teaching", label: text("講義 (teaching)", "Teaching (teaching)") },
+    { value: "topic", label: text("トピック (topic)", "Topic (topic)") },
+    { value: "systematicReview", label: "SR (systematicReview)" },
+    { value: "grantApplication", label: text("申請 (grantApplication)", "Application (grantApplication)") },
+    { value: "thesis", label: text("学位論文 (thesis)", "Thesis (thesis)") },
+  ];
 
   async function loadProjects() {
     try {
@@ -84,17 +100,21 @@ export function ProjectsTab({ client }: { client: Repo }) {
 
   async function createProject(e: React.FormEvent) {
     e.preventDefault();
-    if (!pName.trim()) {
-      setMsg({ kind: "err", text: "プロジェクト名は必須です" });
+    const names = normalizeLanguageTexts(pName);
+    if (!names.length) {
+      setMsg({ kind: "err", text: text("プロジェクト名は必須です", "Project name is required") });
       return;
     }
     setCreatingP(true);
     setMsg(null);
     try {
+      const base = structuredClone(editingProject?.value ?? {});
+      for (const key of ["name", "description", "purpose", "targetVenue", "updatedAt"]) delete base[key];
       const rec: any = {
+        ...base,
         $type: NSID.collection,
-        name: pName.trim(),
-        ...clean({ description: pDesc, purpose: pPurpose, targetVenue: pVenue }),
+        name: names,
+        ...clean({ description: normalizeLanguageTexts(pDesc), purpose: pPurpose, targetVenue: normalizeLanguageTexts(pVenue) }),
         createdAt: editingProject?.value.createdAt ?? now(),
       };
       const ref = editingProject
@@ -104,27 +124,34 @@ export function ProjectsTab({ client }: { client: Repo }) {
       if (verified.uri !== ref.uri || (verified.cid && verified.cid !== ref.cid)) {
         throw new Error("PDS read-after-write verification failed");
       }
-      setPName("");
-      setPDesc("");
-      setPVenue("");
+      if (editingProject) await repairCurrentStrongRefs(client);
+      setPName([]);
+      setPDesc([]);
+      setPVenue([]);
       const wasEditing = !!editingProject;
       setEditingProject(null);
       await loadProjects();
       const created = { uri: ref.uri, cid: ref.cid, value: rec };
       setSelected(created);
-      setMsg({ kind: "ok", text: `プロジェクト「${rec.name}」を${wasEditing ? "更新" : "作成"}し、PDSからの読み戻しを確認しました。` });
+      setMsg({
+        kind: "ok",
+        text: text(
+          `プロジェクト「${pickLanguageText(rec.name, locale)}」を${wasEditing ? "更新" : "作成"}し、PDSからの読み戻しを確認しました。`,
+          `Project “${pickLanguageText(rec.name, locale)}” was ${wasEditing ? "updated" : "created"} and read back from the PDS.`,
+        ),
+      });
     } catch (err: any) {
-      setMsg({ kind: "err", text: `作成失敗: ${err?.message ?? err}` });
+      setMsg({ kind: "err", text: `${text("作成失敗", "Creation failed")}: ${err?.message ?? err}` });
     } finally {
       setCreatingP(false);
     }
   }
 
   function startProjectEdit(project: Rec) {
-    setPName(project.value.name ?? "");
-    setPDesc(project.value.description ?? "");
+    setPName(languageTexts(project.value.name));
+    setPDesc(languageTexts(project.value.description));
     setPPurpose(project.value.purpose ?? "");
-    setPVenue(project.value.targetVenue ?? "");
+    setPVenue(languageTexts(project.value.targetVenue));
     setEditingProject(project);
     setMsg(null);
     document.getElementById("project-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -141,37 +168,36 @@ export function ProjectsTab({ client }: { client: Repo }) {
       if (selected?.uri === p.uri) setSelected(null);
       await loadProjects();
       if (cleanup.some((result) => result.status === "rejected")) {
-        setMsg({ kind: "err", text: "プロジェクトは削除しましたが、一部の所属レコードを削除できませんでした。" });
+        setMsg({ kind: "err", text: text("プロジェクトは削除しましたが、一部の所属レコードを削除できませんでした。", "The project was deleted, but some membership records could not be deleted.") });
       } else {
-        setMsg({ kind: "ok", text: "プロジェクトと所属レコードを削除しました。論文レコードは保持されています。" });
+        setMsg({ kind: "ok", text: text("プロジェクトと所属レコードを削除しました。論文レコードは保持されています。", "The project and membership records were deleted. Paper records were retained.") });
       }
     } catch (err: any) {
-      setMsg({ kind: "err", text: `削除失敗: ${err?.message ?? err}` });
+      setMsg({ kind: "err", text: `${text("削除失敗", "Deletion failed")}: ${err?.message ?? err}` });
     }
   }
 
   return (
     <>
       <div className="panel" id="project-form">
-        <h2>新しいプロジェクト</h2>
+        <h2>{text("新しいプロジェクト", "New project")}</h2>
         <p className="hint">
-          プロジェクト = <code>pub.paper.collection</code>。執筆中の論文・講義・SR
-          などの名前付き集合です。論文の所属は別レコード（collectionItem）で管理します。
+          {text("プロジェクト = ", "Project = ")}<code>pub.paper.collection</code>{text("。執筆中の論文・講義・SRなどの名前付き集合です。論文の所属は別レコード（collectionItem）で管理します。", ". It is a named collection for a paper in progress, course, SR, and similar work. Paper membership is managed in separate collectionItem records.")}
         </p>
         <form onSubmit={createProject}>
           <div className="grid">
-            <Field label="プロジェクト名" required value={pName} onChange={setPName} placeholder="ATProto学術基盤 論文" />
-            <SelectField label="目的" value={pPurpose} onChange={setPPurpose} options={PURPOSES} />
-            <Field label="投稿先（任意）" value={pVenue} onChange={setPVenue} placeholder="Nature / NeurIPS" />
+            <LanguageTextField label={text("プロジェクト名", "Project name")} required value={pName} onChange={setPName} placeholder={text("ATProto学術基盤 論文", "ATProto scholarly infrastructure paper")} />
+            <SelectField label={text("目的", "Purpose")} value={pPurpose} onChange={setPPurpose} options={purposes} />
+            <LanguageTextField label={text("投稿先（任意）", "Target venue (optional)")} value={pVenue} onChange={setPVenue} placeholder="Nature / NeurIPS" />
           </div>
           <div style={{ marginTop: 12 }}>
-            <Field label="説明" value={pDesc} onChange={setPDesc} textarea />
+            <LanguageTextField label={text("説明", "Description")} value={pDesc} onChange={setPDesc} textarea />
           </div>
           <div className="toolbar">
             <button className="btn" type="submit" disabled={creatingP}>
-              {creatingP ? "保存中…" : editingProject ? "プロジェクトを更新" : "プロジェクトを作成"}
+              {creatingP ? text("保存中…", "Saving...") : editingProject ? text("プロジェクトを更新", "Update project") : text("プロジェクトを作成", "Create project")}
             </button>
-            {editingProject && <button className="btn ghost" type="button" onClick={() => { setEditingProject(null); setPName(""); setPDesc(""); setPPurpose("writing"); setPVenue(""); }}>編集をキャンセル</button>}
+            {editingProject && <button className="btn ghost" type="button" onClick={() => { setEditingProject(null); setPName([]); setPDesc([]); setPPurpose("writing"); setPVenue([]); }}>{text("編集をキャンセル", "Cancel editing")}</button>}
           </div>
         </form>
         <Message msg={msg} />
@@ -179,20 +205,20 @@ export function ProjectsTab({ client }: { client: Repo }) {
 
       <div className="panel">
         <h2>
-          プロジェクト一覧 <span className="tag">{projects.length}</span>
+          {text("プロジェクト一覧", "Projects")} <span className="tag">{projects.length}</span>
         </h2>
         <div className="list">
-          {projects.length === 0 && <div className="empty">まだプロジェクトがありません。</div>}
+          {projects.length === 0 && <div className="empty">{text("まだプロジェクトがありません。", "No projects yet.")}</div>}
           {projects.map((p) => (
             <RecordCardShell
               key={p.uri}
-              onOpen={() => setDetail({ title: p.value.name ?? "プロジェクト", uri: p.uri, cid: p.cid, value: p.value })}
+              onOpen={() => setDetail({ title: pickLanguageText(p.value.name, locale) || text("プロジェクト", "Project"), uri: p.uri, cid: p.cid, value: p.value })}
             >
               <div>
-                <div className="title">{p.value.name}</div>
+                <div className="title">{pickLanguageText(p.value.name, locale)}</div>
                 <div className="meta">
                   {p.value.purpose && <span className="tag">{p.value.purpose}</span>}
-                  {p.value.targetVenue ?? ""}
+                  {pickLanguageText(p.value.targetVenue, locale)}
                 </div>
               </div>
               <div className="row">
@@ -200,10 +226,10 @@ export function ProjectsTab({ client }: { client: Repo }) {
                   className="btn small ghost"
                   onClick={(event) => { event.stopPropagation(); setSelected(selected?.uri === p.uri ? null : p); }}
                 >
-                  {selected?.uri === p.uri ? "閉じる" : "論文を管理"}
+                  {selected?.uri === p.uri ? text("閉じる", "Close") : text("論文を管理", "Manage papers")}
                 </button>
-                <button className="btn danger small" onClick={(event) => { event.stopPropagation(); if (confirm(`プロジェクト「${p.value.name}」を削除しますか？（論文レコード自体は残ります）`)) deleteProject(p); }}>
-                  削除
+                <button className="btn danger small" onClick={(event) => { event.stopPropagation(); if (confirm(text(`プロジェクト「${pickLanguageText(p.value.name, locale)}」を削除しますか？（論文レコード自体は残ります）`, `Delete project “${pickLanguageText(p.value.name, locale)}”? (Paper records will remain.)`))) deleteProject(p); }}>
+                  {text("削除", "Delete")}
                 </button>
               </div>
             </RecordCardShell>
@@ -221,7 +247,7 @@ export function ProjectsTab({ client }: { client: Repo }) {
         } : undefined}
         onDelete={detail?.uri ? () => {
           const project = projects.find((candidate) => candidate.uri === detail.uri);
-          if (!project) throw new Error("プロジェクトが見つかりません。");
+          if (!project) throw new Error(text("プロジェクトが見つかりません。", "Project not found."));
           return deleteProject(project);
         } : undefined}
       />
@@ -232,6 +258,7 @@ export function ProjectsTab({ client }: { client: Repo }) {
 // ---- papers within a project ----
 
 function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
+  const { locale, text } = useI18n();
   const [items, setItems] = useState<{ item: Rec; ref: Rec | null; authorship: Rec | null }[]>([]);
   const [editingPaper, setEditingPaper] = useState<{ item: Rec; ref: Rec; authorship: Rec | null } | null>(null);
   const [msg, setMsg] = useState<Msg>(null);
@@ -240,9 +267,10 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
 
   // paper form
   const [type, setType] = useState("article-journal");
-  const [title, setTitle] = useState("");
-  const [authors, setAuthors] = useState("");
-  const [container, setContainer] = useState("");
+  const [title, setTitle] = useState<LanguageText[]>([]);
+  const [authors, setAuthors] = useState<LanguageText[]>([]);
+  const [authorsDirty, setAuthorsDirty] = useState(false);
+  const [container, setContainer] = useState<LanguageText[]>([]);
   const [year, setYear] = useState("");
   const [doi, setDoi] = useState("");
   const [arxivId, setArxivId] = useState("");
@@ -251,6 +279,12 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
   const [claim, setClaim] = useState(false);
   const [outputCategory, setOutputCategory] = useState("article");
   const [isFeatured, setIsFeatured] = useState(false);
+  const outputCategories = [
+    { value: "article", label: text("論文 (article)", "Article (article)") },
+    { value: "misc", label: "MISC" },
+    { value: "book", label: text("書籍 (book)", "Book (book)") },
+    { value: "other", label: text("その他 (other)", "Other (other)") },
+  ];
 
   async function load() {
     try {
@@ -290,18 +324,26 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
   }, [project.uri]);
 
   function buildContributors() {
-    return authors
-      .split(/[;,\n]/)
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .map((name, i) => ({ role: "author", literal: name, sequence: i + 1 }));
+    const byLanguage = normalizeLanguageTexts(authors).map((variant) => ({
+      language: variant.language,
+      names: variant.value.split(/[;,\n]/).map((name) => name.trim()).filter(Boolean),
+    }));
+    const count = Math.max(0, ...byLanguage.map((variant) => variant.names.length));
+    return Array.from({ length: count }, (_, i) => ({
+      role: "author",
+      literal: byLanguage
+        .map((variant) => ({ language: variant.language, value: variant.names[i] ?? "" }))
+        .filter((variant) => variant.value),
+      sequence: i + 1,
+    })).filter((person) => person.literal.length);
   }
 
   function resetPaperForm() {
     setType("article-journal");
-    setTitle("");
-    setAuthors("");
-    setContainer("");
+    setTitle([]);
+    setAuthors([]);
+    setAuthorsDirty(false);
+    setContainer([]);
     setYear("");
     setDoi("");
     setArxivId("");
@@ -314,14 +356,15 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
 
   function startPaperEdit(entry: { item: Rec; ref: Rec | null; authorship: Rec | null }) {
     if (!entry.ref) {
-      setMsg({ kind: "err", text: "参照レコードを取得できないため編集できません。" });
+      setMsg({ kind: "err", text: text("参照レコードを取得できないため編集できません。", "This paper cannot be edited because its reference record could not be loaded.") });
       return;
     }
     const value = entry.ref.value;
     setType(value.type ?? "article-journal");
-    setTitle(value.title ?? "");
-    setAuthors((value.contributors ?? []).map((person: any) => person.literal ?? person.name ?? "").filter(Boolean).join("\n"));
-    setContainer(value.containerTitle ?? "");
+    setTitle(languageTexts(value.title));
+    setAuthors(contributorNames(value.contributors ?? []));
+    setAuthorsDirty(false);
+    setContainer(languageTexts(value.containerTitle));
     setYear(value.issued?.year ? String(value.issued.year) : "");
     setDoi(value.doi ?? "");
     setArxivId(value.arxivId ?? "");
@@ -336,8 +379,9 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
 
   async function addPaper(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim()) {
-      setMsg({ kind: "err", text: "タイトルは必須です" });
+    const titles = normalizeLanguageTexts(title);
+    if (!titles.length) {
+      setMsg({ kind: "err", text: text("タイトルは必須です", "Title is required") });
       return;
     }
     setBusy(true);
@@ -345,15 +389,18 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
     const created: { collection: string; uri: string }[] = [];
     try {
       // 1) reference
-      const reference: any = {
-        $type: NSID.reference,
-        type,
-        title: title.trim(),
-        ...clean({ containerTitle: container, doi: normalizeDoi(doi), arxivId, url }),
-        createdAt: now(),
-      };
+      const reference: any = structuredClone(editingPaper?.ref.value ?? {});
+      for (const key of ["type", "title", "containerTitle", "doi", "arxivId", "url", "issued"]) delete reference[key];
+      reference.$type = NSID.reference;
+      reference.type = type;
+      reference.title = titles;
+      reference.createdAt = editingPaper?.ref.value.createdAt ?? now();
+      Object.assign(reference, clean({ containerTitle: normalizeLanguageTexts(container), doi: normalizeDoi(doi), arxivId, url }));
       const contribs = buildContributors();
-      if (contribs.length) reference.contributors = contribs;
+      if (!editingPaper || authorsDirty) {
+        delete reference.contributors;
+        if (contribs.length) reference.contributors = contribs;
+      }
       const y = parseInt(year, 10);
       if (!Number.isNaN(y)) reference.issued = { year: y };
 
@@ -369,6 +416,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
         )));
         if (claim) {
           const authorshipRecord = {
+            ...(editingPaper.authorship?.value ?? {}),
             $type: NSID.authorship,
             reference: { uri: refRef.uri, cid: refRef.cid },
             role: "author",
@@ -388,9 +436,10 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
         if (verified.uri !== refRef.uri || (verified.cid && verified.cid !== refRef.cid)) {
           throw new Error("Reference read-after-write verification failed");
         }
+        await repairCurrentStrongRefs(client);
         resetPaperForm();
         await load();
-        setMsg({ kind: "ok", text: "論文情報をフォームから更新しました。" });
+        setMsg({ kind: "ok", text: text("論文情報をフォームから更新しました。", "Paper information was updated from the form.") });
         return;
       }
 
@@ -428,7 +477,10 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
       await load();
       setMsg({
         kind: "ok",
-        text: `論文を追加しました${claim ? "（業績として authorship も登録）" : ""}。`,
+        text: text(
+          `論文を追加しました${claim ? "（業績として authorship も登録）" : ""}。`,
+          `Paper added${claim ? " (authorship also registered as an achievement)" : ""}.`,
+        ),
       });
     } catch (err: any) {
       const rollback = await Promise.allSettled(
@@ -439,7 +491,10 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
       const rollbackFailed = rollback.some((result) => result.status === "rejected");
       setMsg({
         kind: "err",
-        text: `追加失敗: ${err?.message ?? err}${rollbackFailed ? "（途中レコードの自動削除にも失敗しました）" : created.length ? "（途中レコードは取り消しました）" : ""}`,
+        text: text(
+          `追加失敗: ${err?.message ?? err}${rollbackFailed ? "（途中レコードの自動削除にも失敗しました）" : created.length ? "（途中レコードは取り消しました）" : ""}`,
+          `Addition failed: ${err?.message ?? err}${rollbackFailed ? " (automatic cleanup of partial records also failed)" : created.length ? " (partial records were rolled back)" : ""}`,
+        ),
       });
     } finally {
       setBusy(false);
@@ -451,7 +506,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
       await client.deleteRecord(NSID.collectionItem, rkeyFromUri(itemUri));
       await load();
     } catch (err: any) {
-      setMsg({ kind: "err", text: `削除失敗: ${err?.message ?? err}` });
+      setMsg({ kind: "err", text: `${text("削除失敗", "Removal failed")}: ${err?.message ?? err}` });
     }
   }
 
@@ -472,68 +527,67 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
       { collection: NSID.collectionItem, uri: item.uri },
     ];
     const results = await Promise.allSettled(targets.map((target) => client.deleteRecord(target.collection, rkeyFromUri(target.uri))));
-    if (results.some((result) => result.status === "rejected")) throw new Error("関連レコードの一部を削除できませんでした。");
+    if (results.some((result) => result.status === "rejected")) throw new Error(text("関連レコードの一部を削除できませんでした。", "Some related records could not be deleted."));
     await load();
-    setMsg({ kind: "ok", text: "論文と関連する所属・著者レコードを削除しました。" });
+    setMsg({ kind: "ok", text: text("論文と関連する所属・著者レコードを削除しました。", "The paper and its related membership and authorship records were deleted.") });
   }
 
   return (
     <>
     <div className="panel" id={`paper-form-${rkeyFromUri(project.uri)}`} style={{ borderColor: "var(--accent)" }}>
-      <h2>「{project.value.name}」の論文</h2>
+      <h2>{text(`「${pickLanguageText(project.value.name, locale)}」の論文`, `Papers in “${pickLanguageText(project.value.name, locale)}”`)}</h2>
       <p className="hint">
-        論文（pub.paper.reference）を作り、このプロジェクトに所属させます（collectionItem）。
-        「自分の業績として登録」で id.career.authorship も同時に作成します。
+        {text("論文（pub.paper.reference）を作り、このプロジェクトに所属させます（collectionItem）。「自分の業績として登録」で id.career.authorship も同時に作成します。", "Create a paper (pub.paper.reference) and add it to this project (collectionItem). Selecting “Register as my work” also creates id.career.authorship.")}
       </p>
 
       <form onSubmit={addPaper}>
         <div className="grid">
-          <SelectField label="種別 (CSL)" value={type} onChange={setType} options={CSL_TYPES} />
-          <Field label="タイトル" required value={title} onChange={setTitle} />
-          <Field label="掲載誌・会議名" value={container} onChange={setContainer} placeholder="Journal of ..." />
-          <Field label="発行年" value={year} onChange={setYear} placeholder="2025" />
+          <SelectField label={text("種別 (CSL)", "Type (CSL)")} value={type} onChange={setType} options={CSL_TYPES} />
+          <LanguageTextField label={text("タイトル", "Title")} required value={title} onChange={setTitle} />
+          <LanguageTextField label={text("掲載誌・会議名", "Journal or conference")} value={container} onChange={setContainer} placeholder="Journal of ..." />
+          <Field label={text("発行年", "Publication year")} value={year} onChange={setYear} placeholder="2025" />
           <Field label="DOI" value={doi} onChange={setDoi} placeholder="10.1145/xxxxxxx" />
           <Field label="arXiv ID" value={arxivId} onChange={setArxivId} placeholder="2402.03239" />
           <Field label="URL" value={url} onChange={setUrl} />
         </div>
         <div style={{ marginTop: 12 }}>
-          <Field
-            label="著者（カンマ、;、改行区切り）"
+          <LanguageTextField
+            label={text("著者（カンマ、;、改行区切り）", "Authors (separated by comma, semicolon, or newline)")}
             value={authors}
-            onChange={setAuthors}
+            onChange={(value) => { setAuthors(value); setAuthorsDirty(true); }}
             textarea
-            placeholder={"福島 岳\nYamada Taro"}
+            placeholder={text("福島 岳\n山田 太郎", "Takeru Fukushima\nTaro Yamada")}
           />
         </div>
 
         <hr className="sep" />
-        <div className="subhead">業績登録（authorship）</div>
+        <div className="subhead">{text("業績登録（authorship）", "Achievement registration (authorship)")}</div>
         <div className="row">
-          <Checkbox label="自分の業績として登録" checked={claim} onChange={setClaim} />
+          <Checkbox label={text("自分の業績として登録", "Register as my work")} checked={claim} onChange={setClaim} />
           {claim && (
             <>
-              <SelectField label="CV区分" value={outputCategory} onChange={setOutputCategory} options={OUTPUT_CATS} />
-              <Checkbox label="主要業績" checked={isFeatured} onChange={setIsFeatured} />
+              <SelectField label={text("CV区分", "CV category")} value={outputCategory} onChange={setOutputCategory} options={outputCategories} />
+              <Checkbox label={text("主要業績", "Featured work")} checked={isFeatured} onChange={setIsFeatured} />
             </>
           )}
         </div>
 
         <div className="toolbar">
           <button className="btn" type="submit" disabled={busy}>
-            {busy ? "保存中…" : editingPaper ? "論文情報を更新" : "論文を追加"}
+            {busy ? text("保存中…", "Saving...") : editingPaper ? text("論文情報を更新", "Update paper") : text("論文を追加", "Add paper")}
           </button>
-          {editingPaper && <button className="btn ghost" type="button" onClick={resetPaperForm}>編集をキャンセル</button>}
+          {editingPaper && <button className="btn ghost" type="button" onClick={resetPaperForm}>{text("編集をキャンセル", "Cancel editing")}</button>}
         </div>
         <Message msg={msg} />
       </form>
 
       <div className="list">
-        {items.length === 0 && <div className="empty">まだ論文がありません。</div>}
+        {items.length === 0 && <div className="empty">{text("まだ論文がありません。", "No papers yet.")}</div>}
         {items.map(({ item, ref, authorship }) => (
           <RecordCardShell
             key={item.uri}
             onOpen={() => setDetail({
-              title: ref?.value.title ?? "文献レコード",
+              title: pickLanguageText(ref?.value.title, locale) || text("文献レコード", "Reference record"),
               uri: item.uri,
               cid: item.cid,
               value: {
@@ -548,14 +602,14 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
             })}
           >
             <div>
-              <div className="title">{ref?.value.title ?? "（参照解決できず）"}</div>
+              <div className="title">{pickLanguageText(ref?.value.title, locale) || text("（参照解決できず）", "(Reference unavailable)")}</div>
               <div className="meta">
                 {ref?.value.type && <span className="tag">{ref.value.type}</span>}
-                {[ref?.value.containerTitle, ref?.value.issued?.year].filter(Boolean).join(" · ")}
+                {[pickLanguageText(ref?.value.containerTitle, locale), ref?.value.issued?.year].filter(Boolean).join(" · ")}
               </div>
             </div>
             <button className="btn danger small" onClick={(event) => { event.stopPropagation(); removeItem(item.uri); }}>
-              外す
+              {text("外す", "Remove")}
             </button>
           </RecordCardShell>
         ))}
@@ -570,7 +624,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
       } : undefined}
       onDelete={detail ? async () => {
         const entry = items.find(({ item }) => item.uri === detail.uri);
-        if (!entry) throw new Error("削除対象の論文レコードが見つかりません。");
+        if (!entry) throw new Error(text("削除対象の論文レコードが見つかりません。", "The paper record to delete was not found."));
         await deletePaper(entry.item, entry.ref, entry.authorship);
       } : undefined}
     />

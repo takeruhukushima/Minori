@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "check": "tsc -b && vitest run && node -e \"const fs=require('fs');for(const d of ['lexicons/id/career','lexicons/pub/paper'])for(const f of fs.readdirSync(d))JSON.parse(fs.readFileSync(d+'/'+f));console.log('TypeScript and Lexicon JSON: OK')\"",
+    "migrate:language-variants": "tsx scripts/migrate-language-variants.ts",
     "preview": "vite preview",
     "deploy": "pnpm build && wrangler deploy"
   },
@@ -15,6 +16,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "tsx": "^4.23.12",
     "typescript": "^5.6.3",
     "vite": "^5.4.11",
     "vitest": "^2.1.9",

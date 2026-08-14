@@ -1,3 +1,7 @@
+import { canonicalizeLanguageTag, LanguageText, normalizeLanguageTexts, upsertLanguageText } from "./languageText";
+import { useI18n } from "./i18n";
+import { useState } from "react";
+
 export function Field(props: {
   label: string;
   value: string;
@@ -27,6 +31,56 @@ export function Field(props: {
         />
       )}
     </label>
+  );
+}
+
+export function LanguageTextField(props: {
+  label: string;
+  value: LanguageText[];
+  onChange: (value: LanguageText[]) => void;
+  required?: boolean;
+  placeholder?: string;
+  textarea?: boolean;
+}) {
+  const { text } = useI18n();
+  const variants = normalizeLanguageTexts(props.value);
+  const [extraLanguages, setExtraLanguages] = useState<string[]>([]);
+  const languages = [...new Set(["ja", "en", ...extraLanguages, ...variants.map((item) => item.language)])];
+
+  return (
+    <fieldset className="language-field">
+      <legend>{props.label} {props.required && <span className="req">*</span>}</legend>
+      {languages.map((language) => {
+        const current = variants.find((item) => item.language === language)?.value ?? "";
+        return (
+          <label className="field language-row" key={language}>
+            <span>{language}</span>
+            {props.textarea ? (
+              <textarea value={current} placeholder={props.placeholder} onChange={(event) => props.onChange(upsertLanguageText(variants, language, event.target.value))} />
+            ) : (
+              <input value={current} placeholder={props.placeholder} onChange={(event) => props.onChange(upsertLanguageText(variants, language, event.target.value))} />
+            )}
+          </label>
+        );
+      })}
+      <button
+        className="btn ghost small"
+        type="button"
+        onClick={() => {
+          const language = window.prompt(text("追加する言語のBCP-47タグ", "BCP-47 tag to add"));
+          if (language?.trim()) {
+            try {
+              const canonical = canonicalizeLanguageTag(language);
+              if (!languages.includes(canonical)) setExtraLanguages((current) => [...current, canonical]);
+            } catch (error) {
+              window.alert(error instanceof Error ? error.message : String(error));
+            }
+          }
+        }}
+      >
+        {text("＋ 言語を追加", "+ Add language")}
+      </button>
+    </fieldset>
   );
 }
 

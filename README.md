@@ -41,6 +41,23 @@ VITE_PUBLIC_URL=https://minori.example.com pnpm deploy
 
 複数レコードを伴う論文追加が途中で失敗した場合、作成済みレコードを逆順に削除します。各主要な保存操作ではPDSから読み戻し、URI/CIDを照合します。
 
-UIは「CV」と「プロジェクト × 論文」の2タブです。CVタブ内では、単一のプロフィールレコードを先頭に表示し、その下に職歴・学歴・活動等の複数レコードを並べます。
+UIは日本語・英語を切り替えられます。CVの表示テキストはUI言語と独立したBCP-47言語variant配列として保存され、`ja`、`en`に限らず任意の言語タグを追加できます。
+
+「Migration」タブは、旧string形式で保存済みのPDSレコードを言語variant形式へ一度だけ変換するための暫定機能です。値の言語は推測せず、利用者が一括またはフィールドごとに指定します。実行前のJSONバックアップ、書き戻し後の読み戻し検証、同一PDS内のStrongRef修復を行います。attestationのtarget CIDは証明対象の版を固定するため更新しません。
+
+CLIでは環境変数で認証情報を渡し、まずdry-runとバックアップを作成します。
+
+```sh
+MINORI_IDENTIFIER=you.example.com \
+MINORI_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx \
+pnpm migrate:language-variants -- --language ja --output migration.json
+
+# migration.jsonのlanguagesを確認・必要なら候補ごとに修正後
+MINORI_IDENTIFIER=you.example.com \
+MINORI_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx \
+pnpm migrate:language-variants -- --plan migration.json --output migration-applied.json --apply
+```
+
+全対象PDSの再スキャンで旧形式と未解決StrongRefが0件になった後、Migrationタブ、CLI、旧形式互換読み取りは削除します。
 
 OAuthは `transition:generic` を使わず、上記UIが書き込むコレクションごとの `repo:<NSID>` 権限だけを要求します。

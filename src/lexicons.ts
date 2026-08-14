@@ -11,6 +11,8 @@ export const NSID = {
   // id.career.* — CV
   position: "id.sifa.profile.position",
   profile: "id.career.profile",
+  dossier: "id.career.dossier",
+  attestation: "id.career.attestation",
   education: "id.career.education",
   authorship: "id.career.authorship",
   presentation: "id.career.presentation",

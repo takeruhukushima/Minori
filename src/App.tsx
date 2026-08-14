@@ -7,8 +7,10 @@ import { ProfileTab } from "./tabs/ProfileTab";
 import { CvTab } from "./tabs/CvTab";
 import { ProjectsTab } from "./tabs/ProjectsTab";
 import { PdsDiagnostic } from "./PdsDiagnostic";
+import { LocaleSwitcher, useI18n } from "./i18n";
+import { MigrationTab } from "./tabs/MigrationTab";
 
-type Tab = "cv" | "projects";
+type Tab = "cv" | "projects" | "migration";
 
 interface SignedIn {
   repo: Repo;
@@ -17,6 +19,7 @@ interface SignedIn {
 }
 
 export function App() {
+  const { text } = useI18n();
   const [state, setState] = useState<"loading" | SignedIn | null>("loading");
   const [tab, setTab] = useState<Tab>("cv");
 
@@ -67,7 +70,7 @@ export function App() {
     return (
       <div className="app">
         <div className="login-wrap">
-          <div className="panel">読み込み中…</div>
+          <div className="panel">{text("読み込み中…", "Loading...")}</div>
         </div>
       </div>
     );
@@ -83,8 +86,9 @@ export function App() {
         <h1>Minori</h1>
         <div className="row">
           <span className="who">{label}</span>
+          <LocaleSwitcher />
           <button className="btn ghost small" onClick={() => logout()}>
-            ログアウト
+            {text("ログアウト", "Log out")}
           </button>
         </div>
       </div>
@@ -94,7 +98,10 @@ export function App() {
           CV
         </button>
         <button className={tab === "projects" ? "active" : ""} onClick={() => setTab("projects")}>
-          プロジェクト × 論文
+          {text("プロジェクト × 論文", "Projects × Papers")}
+        </button>
+        <button className={tab === "migration" ? "active" : ""} onClick={() => setTab("migration")}>
+          Migration
         </button>
       </div>
 
@@ -107,6 +114,7 @@ export function App() {
         </>
       )}
       {tab === "projects" && <ProjectsTab client={repo} />}
+      {tab === "migration" && <MigrationTab client={repo} />}
     </div>
   );
 }
