@@ -6,7 +6,7 @@ import { Checkbox, Field, LanguageTextField, Message, Msg, SelectField, clean, n
 import { RecordCardShell, RecordDetailData, RecordDetailDialog } from "../RecordDetail";
 import { useI18n } from "../i18n";
 import { assertNoUndLanguageTexts, LanguageText, normalizeLanguageTexts, normalizeLanguageTextsForWrite, pickLanguageText, specificLanguageTag } from "../languageText";
-import { repairCurrentStrongRefs } from "../migration";
+import { repairCurrentStrongRefs } from "../strongRefRepair";
 
 type FieldType = "text" | "textarea" | "select" | "checkbox" | "org";
 
@@ -30,7 +30,6 @@ interface SectionDef {
 }
 
 const languageTexts = (value: unknown): LanguageText[] => {
-  if (typeof value === "string") return value.trim() ? [{ language: "und", value }] : [];
   return normalizeLanguageTexts(value);
 };
 

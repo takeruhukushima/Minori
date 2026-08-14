@@ -20,6 +20,6 @@ describe("language text variants", () => {
     expect(() => normalizeLanguageTextsForWrite([{ language: "und", value: "Unknown" }])).toThrow("specific language");
     expect(() => specificLanguageTag("und")).toThrow("specific BCP-47");
     expect(() => specificLanguageTag("und-Latn")).toThrow("specific BCP-47");
-    expect(() => assertNoUndLanguageTexts({ nested: [{ language: "und-Latn", value: "Unknown" }] })).toThrow("Run Migration");
+    expect(() => assertNoUndLanguageTexts({ nested: [{ language: "und-Latn", value: "Unknown" }] })).toThrow("specific language");
   });
 });

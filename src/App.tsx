@@ -8,9 +8,8 @@ import { CvTab } from "./tabs/CvTab";
 import { ProjectsTab } from "./tabs/ProjectsTab";
 import { PdsDiagnostic } from "./PdsDiagnostic";
 import { LocaleSwitcher, useI18n } from "./i18n";
-import { MigrationTab } from "./tabs/MigrationTab";
 
-type Tab = "cv" | "projects" | "migration";
+type Tab = "cv" | "projects";
 
 interface SignedIn {
   repo: Repo;
@@ -100,9 +99,6 @@ export function App() {
         <button className={tab === "projects" ? "active" : ""} onClick={() => setTab("projects")}>
           {text("プロジェクト × 論文", "Projects × Papers")}
         </button>
-        <button className={tab === "migration" ? "active" : ""} onClick={() => setTab("migration")}>
-          Migration
-        </button>
       </div>
 
       <PdsDiagnostic client={repo} />
@@ -114,7 +110,6 @@ export function App() {
         </>
       )}
       {tab === "projects" && <ProjectsTab client={repo} />}
-      {tab === "migration" && <MigrationTab client={repo} />}
     </div>
   );
 }

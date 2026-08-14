@@ -6,7 +6,7 @@ import { listAllRecords, Repo } from "../repo";
 import { NSID } from "../lexicons";
 import { Checkbox, Field, LanguageTextField, Message, Msg, SelectField, clean, now } from "../ui";
 import { RecordCardShell, RecordDetailData, RecordDetailDialog } from "../RecordDetail";
-import { repairCurrentStrongRefs } from "../migration";
+import { repairCurrentStrongRefs } from "../strongRefRepair";
 
 interface Rec {
   uri: string;
@@ -37,10 +37,6 @@ function normalizeDoi(value: string): string {
 }
 
 function languageTexts(value: unknown): LanguageText[] {
-  if (typeof value === "string") {
-    const legacy = value.trim();
-    return legacy ? [{ language: "und", value: legacy }] : [];
-  }
   return normalizeLanguageTexts(value);
 }
 

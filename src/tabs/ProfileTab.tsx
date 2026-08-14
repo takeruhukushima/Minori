@@ -23,16 +23,13 @@ let nextKeywordId = 1;
 const newKeyword = (variants: LanguageText[] = []): KeywordDraft => ({ id: `keyword-${nextKeywordId++}`, variants });
 
 function languageTexts(value: unknown): LanguageText[] {
-  if (typeof value === "string") return value.trim() ? [{ language: "und", value }] : [];
   return normalizeLanguageTexts(value);
 }
 
 function keywordDrafts(value: unknown): KeywordDraft[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((keyword) => {
-    const variants = typeof keyword === "string"
-      ? languageTexts(keyword)
-      : languageTexts((keyword as { variants?: unknown } | null)?.variants);
+    const variants = languageTexts((keyword as { variants?: unknown } | null)?.variants);
     return variants.length ? [newKeyword(variants)] : [];
   });
 }

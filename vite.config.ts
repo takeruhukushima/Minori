@@ -9,8 +9,6 @@ const scope = [
   "pub.paper.collectionItem",
   "pub.paper.readingStatus",
   "id.career.profile",
-  "id.career.dossier",
-  "id.career.attestation",
   "id.career.education",
   "id.career.authorship",
   "id.career.presentation",

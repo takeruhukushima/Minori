@@ -63,14 +63,13 @@ export function assertNoUndLanguageTexts(value: unknown): void {
   if (typeof record.language === "string" && typeof record.value === "string") {
     const language = canonicalizeLanguageTag(record.language);
     if (language.split("-")[0].toLowerCase() === "und") {
-      throw new Error("Run Migration and assign a specific language to every und variant before saving");
+      throw new Error("Assign a specific language to every und variant before saving");
     }
   }
   Object.values(record).forEach(assertNoUndLanguageTexts);
 }
 
 export function pickLanguageText(value: unknown, requestedLanguage: string): string {
-  if (typeof value === "string") return value;
   const variants = normalizeLanguageTexts(value);
   if (!variants.length) return "";
   const exact = variants.find((item) => item.language.toLowerCase() === requestedLanguage.toLowerCase());

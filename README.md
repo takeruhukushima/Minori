@@ -43,21 +43,6 @@ VITE_PUBLIC_URL=https://minori.example.com pnpm deploy
 
 UIは日本語・英語を切り替えられます。CVの表示テキストはUI言語と独立したBCP-47言語variant配列として保存され、`ja`、`en`に限らず任意の言語タグを追加できます。
 
-「Migration」タブは、旧string形式と `und`（言語未判定）variantを具体的な言語variantへ変換するための暫定機能です。値の言語は推測せず、利用者が一括またはフィールドごとに指定します。実行前のJSONバックアップ、書き戻し後の読み戻し検証、同一PDS内のStrongRef修復を行います。attestationのtarget CIDは証明対象の版を固定するため更新しません。通常フォームは新しい `und` の保存を拒否します。
-
-CLIでは環境変数で認証情報を渡し、まずdry-runとバックアップを作成します。
-
-```sh
-MINORI_IDENTIFIER=you.example.com \
-MINORI_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx \
-pnpm migrate:language-variants -- --language ja --output migration.json
-
-# migration.jsonのlanguagesを確認・必要なら候補ごとに修正後
-MINORI_IDENTIFIER=you.example.com \
-MINORI_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx \
-pnpm migrate:language-variants -- --plan migration.json --output migration-applied.json --apply
-```
-
-全対象PDSの再スキャンで旧形式、`und` variant、未解決StrongRefが0件になった後、Migrationタブ、CLI、旧形式互換読み取りは削除します。
+新規保存では具体的なBCP-47言語タグが必須で、`und`（言語未判定）は拒否されます。既存レコードの編集でCIDが変わった場合、同じPDS内のStrongRefを再走査して更新します。attestationのtarget CIDは証明対象の版を固定するため更新しません。
 
 OAuthは `transition:generic` を使わず、上記UIが書き込むコレクションごとの `repo:<NSID>` 権限だけを要求します。
