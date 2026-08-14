@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canonicalizeLanguageTag, normalizeLanguageTexts, pickLanguageText } from "./languageText";
+import { assertNoUndLanguageTexts, canonicalizeLanguageTag, normalizeLanguageTexts, normalizeLanguageTextsForWrite, pickLanguageText, specificLanguageTag } from "./languageText";
 
 describe("language text variants", () => {
   it("canonicalizes BCP-47 tags and selects exact then base-language matches", () => {
@@ -13,5 +13,13 @@ describe("language text variants", () => {
     expect(() => normalizeLanguageTexts([{ language: "en", value: "one" }, { language: "EN", value: "two" }])).toThrow("Duplicate");
     expect(() => normalizeLanguageTexts([{ language: "en" }])).toThrow("Malformed");
     expect(() => canonicalizeLanguageTag("not a tag")).toThrow("Invalid BCP-47");
+  });
+
+  it("allows und for reading but rejects it for new writes", () => {
+    expect(normalizeLanguageTexts([{ language: "und", value: "Unknown" }])).toHaveLength(1);
+    expect(() => normalizeLanguageTextsForWrite([{ language: "und", value: "Unknown" }])).toThrow("specific language");
+    expect(() => specificLanguageTag("und")).toThrow("specific BCP-47");
+    expect(() => specificLanguageTag("und-Latn")).toThrow("specific BCP-47");
+    expect(() => assertNoUndLanguageTexts({ nested: [{ language: "und-Latn", value: "Unknown" }] })).toThrow("Run Migration");
   });
 });

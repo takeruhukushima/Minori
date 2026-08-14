@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { StrongRef, rkeyFromUri } from "../atproto";
 import { useI18n } from "../i18n";
-import { LanguageText, normalizeLanguageTexts, pickLanguageText } from "../languageText";
+import { assertNoUndLanguageTexts, LanguageText, normalizeLanguageTexts, normalizeLanguageTextsForWrite, pickLanguageText } from "../languageText";
 import { listAllRecords, Repo } from "../repo";
 import { NSID } from "../lexicons";
 import { Checkbox, Field, LanguageTextField, Message, Msg, SelectField, clean, now } from "../ui";
@@ -100,7 +100,7 @@ export function ProjectsTab({ client }: { client: Repo }) {
 
   async function createProject(e: React.FormEvent) {
     e.preventDefault();
-    const names = normalizeLanguageTexts(pName);
+    const names = normalizeLanguageTextsForWrite(pName);
     if (!names.length) {
       setMsg({ kind: "err", text: text("プロジェクト名は必須です", "Project name is required") });
       return;
@@ -114,9 +114,10 @@ export function ProjectsTab({ client }: { client: Repo }) {
         ...base,
         $type: NSID.collection,
         name: names,
-        ...clean({ description: normalizeLanguageTexts(pDesc), purpose: pPurpose, targetVenue: normalizeLanguageTexts(pVenue) }),
+        ...clean({ description: normalizeLanguageTextsForWrite(pDesc), purpose: pPurpose, targetVenue: normalizeLanguageTextsForWrite(pVenue) }),
         createdAt: editingProject?.value.createdAt ?? now(),
       };
+      assertNoUndLanguageTexts(rec);
       const ref = editingProject
         ? await client.putRecord(NSID.collection, rkeyFromUri(editingProject.uri), rec)
         : await client.createRecord(NSID.collection, rec);
@@ -324,7 +325,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
   }, [project.uri]);
 
   function buildContributors() {
-    const byLanguage = normalizeLanguageTexts(authors).map((variant) => ({
+    const byLanguage = normalizeLanguageTextsForWrite(authors).map((variant) => ({
       language: variant.language,
       names: variant.value.split(/[;,\n]/).map((name) => name.trim()).filter(Boolean),
     }));
@@ -379,7 +380,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
 
   async function addPaper(e: React.FormEvent) {
     e.preventDefault();
-    const titles = normalizeLanguageTexts(title);
+    const titles = normalizeLanguageTextsForWrite(title);
     if (!titles.length) {
       setMsg({ kind: "err", text: text("タイトルは必須です", "Title is required") });
       return;
@@ -395,7 +396,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
       reference.type = type;
       reference.title = titles;
       reference.createdAt = editingPaper?.ref.value.createdAt ?? now();
-      Object.assign(reference, clean({ containerTitle: normalizeLanguageTexts(container), doi: normalizeDoi(doi), arxivId, url }));
+      Object.assign(reference, clean({ containerTitle: normalizeLanguageTextsForWrite(container), doi: normalizeDoi(doi), arxivId, url }));
       const contribs = buildContributors();
       if (!editingPaper || authorsDirty) {
         delete reference.contributors;
@@ -403,6 +404,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
       }
       const y = parseInt(year, 10);
       if (!Number.isNaN(y)) reference.issued = { year: y };
+      assertNoUndLanguageTexts(reference);
 
       if (editingPaper) {
         reference.createdAt = editingPaper.ref.value.createdAt ?? reference.createdAt;
@@ -424,6 +426,7 @@ function ProjectPapers({ client, project }: { client: Repo; project: Rec }) {
             ...(isFeatured ? { isFeatured: true } : {}),
             createdAt: editingPaper.authorship?.value.createdAt ?? now(),
           };
+          assertNoUndLanguageTexts(authorshipRecord);
           if (editingPaper.authorship) {
             await client.putRecord(NSID.authorship, rkeyFromUri(editingPaper.authorship.uri), authorshipRecord);
           } else {

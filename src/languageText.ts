@@ -39,6 +39,36 @@ export function canonicalizeLanguageTag(value: string): string {
   }
 }
 
+export function specificLanguageTag(value: string): string {
+  const language = canonicalizeLanguageTag(value);
+  if (language.split("-")[0].toLowerCase() === "und") throw new Error("Choose a specific BCP-47 language tag instead of und");
+  return language;
+}
+
+export function normalizeLanguageTextsForWrite(value: unknown): LanguageText[] {
+  const variants = normalizeLanguageTexts(value);
+  if (variants.some((item) => item.language.split("-")[0].toLowerCase() === "und")) {
+    throw new Error("Assign a specific language to every und variant before saving");
+  }
+  return variants;
+}
+
+export function assertNoUndLanguageTexts(value: unknown): void {
+  if (Array.isArray(value)) {
+    value.forEach(assertNoUndLanguageTexts);
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+  const record = value as Record<string, unknown>;
+  if (typeof record.language === "string" && typeof record.value === "string") {
+    const language = canonicalizeLanguageTag(record.language);
+    if (language.split("-")[0].toLowerCase() === "und") {
+      throw new Error("Run Migration and assign a specific language to every und variant before saving");
+    }
+  }
+  Object.values(record).forEach(assertNoUndLanguageTexts);
+}
+
 export function pickLanguageText(value: unknown, requestedLanguage: string): string {
   if (typeof value === "string") return value;
   const variants = normalizeLanguageTexts(value);

@@ -1,7 +1,7 @@
 import { rkeyFromUri } from "./atproto";
 import { NSID } from "./lexicons";
 import { listAllRecords, Repo } from "./repo";
-import { canonicalizeLanguageTag } from "./languageText";
+import { specificLanguageTag } from "./languageText";
 
 export interface MigrationCandidate {
   id: string;
@@ -10,7 +10,7 @@ export interface MigrationCandidate {
   path: string;
   sourcePath: string;
   value: string;
-  mode: "text" | "keyword";
+  mode: "text" | "keyword" | "relabel";
 }
 
 export interface MigrationRecord {
@@ -164,6 +164,19 @@ export async function scanLegacyRecords(repo: Repo): Promise<MigrationScan> {
             mode: rule.mode ?? "text",
           });
         }
+        if (rule.path !== "originalTitle") {
+          for (const match of findUndVariants(record.value, rule)) {
+            candidates.push({
+              id: `${record.uri}#${match.path}`,
+              uri: record.uri,
+              collection,
+              path: match.path,
+              sourcePath: match.path,
+              value: match.value,
+              mode: "relabel",
+            });
+          }
+        }
       }
     }
   }
@@ -180,7 +193,7 @@ export function buildMigratedRecords(
 ): MigrationRecord[] {
   const byUri = new Map<string, MigrationRecord>();
   for (const candidate of scan.candidates) {
-    const language = canonicalizeLanguageTag(languages[candidate.id] ?? "");
+    const language = specificLanguageTag(languages[candidate.id] ?? "");
     if (!language) throw new Error(`Language is required for ${candidate.id}`);
     const source = scan.records.find((record) => record.uri === candidate.uri);
     if (!source) throw new Error(`Record not found for ${candidate.uri}`);
@@ -190,7 +203,17 @@ export function buildMigratedRecords(
       byUri.set(candidate.uri, target);
     }
     const variant = { language, value: candidate.value };
-    if (candidate.mode === "keyword") {
+    if (candidate.mode === "relabel") {
+      const arrayPath = candidate.path.split(".").slice(0, -2).join(".");
+      const variants = getPath(target.value, arrayPath);
+      if (Array.isArray(variants) && variants.some((item) => {
+        if (typeof item?.language !== "string") return false;
+        try { return specificLanguageTag(item.language) === language; } catch { return false; }
+      })) {
+        throw new Error(`${arrayPath} already has a ${language} variant`);
+      }
+      setPath(target.value, candidate.path, language);
+    } else if (candidate.mode === "keyword") {
       setPath(target.value, candidate.path, { variants: [variant] });
     } else if (candidate.sourcePath !== candidate.path) {
       const existing = getPath(target.value, candidate.path);
@@ -268,6 +291,49 @@ function findStrings(value: unknown, pattern: string): { path: string; value: st
   function visit(current: unknown, index: number, path: string[]) {
     if (index === parts.length) {
       if (typeof current === "string" && current.trim()) matches.push({ path: path.join("."), value: current });
+      return;
+    }
+    if (!current || typeof current !== "object") return;
+    const part = parts[index];
+    if (part.endsWith("[]")) {
+      const key = part.slice(0, -2);
+      const array = (current as Record<string, unknown>)[key];
+      if (!Array.isArray(array)) return;
+      array.forEach((item, itemIndex) => visit(item, index + 1, [...path, key, String(itemIndex)]));
+    } else {
+      visit((current as Record<string, unknown>)[part], index + 1, [...path, part]);
+    }
+  }
+  visit(value, 0, []);
+  return matches;
+}
+
+function findUndVariants(value: unknown, rule: FieldRule): { path: string; value: string }[] {
+  const matches: { path: string; value: string }[] = [];
+  for (const endpoint of findPatternValues(value, rule.path)) {
+    const variants = rule.mode === "keyword"
+      ? (endpoint.value as { variants?: unknown } | null)?.variants
+      : endpoint.value;
+    if (!Array.isArray(variants)) continue;
+    variants.forEach((item, index) => {
+      const itemLanguage = item && typeof item === "object" && typeof (item as any).language === "string"
+        ? (item as any).language.toLowerCase().split("-")[0]
+        : "";
+      if (itemLanguage === "und" && typeof (item as any).value === "string") {
+        const prefix = rule.mode === "keyword" ? `${endpoint.path}.variants` : endpoint.path;
+        matches.push({ path: `${prefix}.${index}.language`, value: (item as any).value });
+      }
+    });
+  }
+  return matches;
+}
+
+function findPatternValues(value: unknown, pattern: string): { path: string; value: unknown }[] {
+  const parts = pattern.split(".");
+  const matches: { path: string; value: unknown }[] = [];
+  function visit(current: unknown, index: number, path: string[]) {
+    if (index === parts.length) {
+      matches.push({ path: path.join("."), value: current });
       return;
     }
     if (!current || typeof current !== "object") return;

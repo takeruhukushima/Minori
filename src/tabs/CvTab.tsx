@@ -5,7 +5,7 @@ import { NSID } from "../lexicons";
 import { Checkbox, Field, LanguageTextField, Message, Msg, SelectField, clean, now } from "../ui";
 import { RecordCardShell, RecordDetailData, RecordDetailDialog } from "../RecordDetail";
 import { useI18n } from "../i18n";
-import { LanguageText, normalizeLanguageTexts, pickLanguageText } from "../languageText";
+import { assertNoUndLanguageTexts, LanguageText, normalizeLanguageTexts, normalizeLanguageTextsForWrite, pickLanguageText, specificLanguageTag } from "../languageText";
 import { repairCurrentStrongRefs } from "../migration";
 
 type FieldType = "text" | "textarea" | "select" | "checkbox" | "org";
@@ -391,13 +391,15 @@ function PublicationsSection({ client }: { client: Repo }) {
 
   async function addPublication(event: React.FormEvent) {
     event.preventDefault();
-    const normalizedTitle = normalizeLanguageTexts(title);
+    const normalizedTitle = normalizeLanguageTextsForWrite(title);
     if (!normalizedTitle.length) return setMsg({ kind: "err", text: text("タイトルは必須です。", "Title is required.") });
     setBusy(true); setMsg(null);
     let referenceRef: StrongRef | null = null;
     try {
-      const contributors = authors.split(/[;,\n]/).map((name) => name.trim()).filter(Boolean)
-        .map((name, index) => ({ role: "author", literal: [{ language: authorLanguage.trim() || "und", value: name }], sequence: index + 1 }));
+      const contributorNames = authors.split(/[;,\n]/).map((name) => name.trim()).filter(Boolean);
+      const contributorLanguage = contributorNames.length ? specificLanguageTag(authorLanguage) : authorLanguage;
+      const contributors = contributorNames
+        .map((name, index) => ({ role: "author", literal: [{ language: contributorLanguage, value: name }], sequence: index + 1 }));
       const parsedYear = Number.parseInt(year, 10);
       const reference: any = structuredClone(editing?.reference.value ?? {});
       for (const key of ["type", "title", "containerTitle", "doi", "url", "issued"]) delete reference[key];
@@ -405,12 +407,13 @@ function PublicationsSection({ client }: { client: Repo }) {
       reference.type = type;
       reference.title = normalizedTitle;
       reference.createdAt = editing?.reference.value.createdAt ?? now();
-      Object.assign(reference, clean({ containerTitle: normalizeLanguageTexts(venue), doi: doi.trim().replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, "").replace(/^doi:\s*/i, "").toLowerCase(), url }));
+      Object.assign(reference, clean({ containerTitle: normalizeLanguageTextsForWrite(venue), doi: doi.trim().replace(/^https?:\/\/(?:dx\.)?doi\.org\//i, "").replace(/^doi:\s*/i, "").toLowerCase(), url }));
       if (!editing || authorsDirty) {
         delete reference.contributors;
         if (contributors.length) reference.contributors = contributors;
       }
       if (!Number.isNaN(parsedYear)) reference.issued = { year: parsedYear };
+      assertNoUndLanguageTexts(reference);
       referenceRef = editing
         ? await client.putRecord(NSID.reference, rkeyFromUri(editing.reference.uri), { ...reference, createdAt: editing.reference.value.createdAt ?? reference.createdAt })
         : await client.createRecord(NSID.reference, reference);
@@ -423,6 +426,7 @@ function PublicationsSection({ client }: { client: Repo }) {
         ...(featured ? { isFeatured: true } : {}),
         createdAt: editing?.authorship.value.createdAt ?? now(),
       };
+      assertNoUndLanguageTexts(authorshipRecord);
       if (editing) {
         if (claim) {
           await client.putRecord(NSID.authorship, rkeyFromUri(editing.authorship.uri), authorshipRecord);
@@ -549,15 +553,15 @@ function Section({ client, def }: { client: Repo; def: SectionDef }) {
     for (const f of def.fields) {
       if (f.type === "org") {
         const org = clean({
-          name: normalizeLanguageTexts(lv(`${f.key}.name`)),
+          name: normalizeLanguageTextsForWrite(lv(`${f.key}.name`)),
           ror: sv(`${f.key}.ror`),
-          department: normalizeLanguageTexts(lv(`${f.key}.department`)),
+          department: normalizeLanguageTextsForWrite(lv(`${f.key}.department`)),
         });
         if (Object.keys(org).length) rec[f.key] = org;
       } else if (f.type === "checkbox") {
         if (bv(f.key)) rec[f.key] = true;
       } else if (f.localized) {
-        const variants = normalizeLanguageTexts(lv(f.key));
+        const variants = normalizeLanguageTextsForWrite(lv(f.key));
         if (variants.length) rec[f.key] = variants;
       } else {
         const t = sv(f.key).trim();
@@ -594,6 +598,7 @@ function Section({ client, def }: { client: Repo; def: SectionDef }) {
         setBusy(false);
         return;
       }
+      assertNoUndLanguageTexts(rec);
       const written = editing
         ? await client.putRecord(def.nsid, rkeyFromUri(editing.uri), rec)
         : await client.createRecord(def.nsid, rec);

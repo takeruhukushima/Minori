@@ -3,7 +3,7 @@ import { Repo } from "../repo";
 import { NSID } from "../lexicons";
 import { Checkbox, Field, LanguageTextField, Message, Msg, clean, now } from "../ui";
 import { RecordDetailData, RecordDetailDialog } from "../RecordDetail";
-import { LanguageText, normalizeLanguageTexts, pickLanguageText } from "../languageText";
+import { assertNoUndLanguageTexts, LanguageText, normalizeLanguageTexts, normalizeLanguageTextsForWrite, pickLanguageText } from "../languageText";
 import { useI18n } from "../i18n";
 
 interface WebLinkDraft {
@@ -104,17 +104,17 @@ export function ProfileTab({ client }: { client: Repo }) {
     setBusy(true);
     setMsg(null);
     try {
-      const normalizedAffName = normalizeLanguageTexts(affName);
-      const normalizedAffDept = normalizeLanguageTexts(affDept);
+      const normalizedAffName = normalizeLanguageTextsForWrite(affName);
+      const normalizedAffDept = normalizeLanguageTextsForWrite(affDept);
       if ((affRor.trim() || normalizedAffDept.length) && !normalizedAffName.length) {
         throw new Error(text("主所属には機関名が必要です。", "A primary affiliation requires an organization name."));
       }
       const primaryAffiliation = clean({ name: normalizedAffName, ror: affRor, department: normalizedAffDept });
       const kw = keywords
-        .map(({ variants }) => ({ variants: normalizeLanguageTexts(variants) }))
+        .map(({ variants }) => ({ variants: normalizeLanguageTextsForWrite(variants) }))
         .filter((keyword) => keyword.variants.length);
       const webLinks = websites
-        .map(({ label, url }) => clean({ label: normalizeLanguageTexts(label), url: url.trim() }))
+        .map(({ label, url }) => clean({ label: normalizeLanguageTextsForWrite(label), url: url.trim() }))
         .filter((link) => link.url);
       for (const link of webLinks) {
         let parsed: URL;
@@ -131,11 +131,11 @@ export function ProfileTab({ client }: { client: Repo }) {
         ...base,
         $type: NSID.profile,
         ...clean({
-          displayName: normalizeLanguageTexts(displayName),
-          nativeName: normalizeLanguageTexts(nativeName),
-          namePreferredCitation: normalizeLanguageTexts(namePreferredCitation),
-          headline: normalizeLanguageTexts(headline),
-          bio: normalizeLanguageTexts(bio),
+          displayName: normalizeLanguageTextsForWrite(displayName),
+          nativeName: normalizeLanguageTextsForWrite(nativeName),
+          namePreferredCitation: normalizeLanguageTextsForWrite(namePreferredCitation),
+          headline: normalizeLanguageTextsForWrite(headline),
+          bio: normalizeLanguageTextsForWrite(bio),
           orcid,
           researchmapId,
           kakenId,
@@ -149,6 +149,7 @@ export function ProfileTab({ client }: { client: Repo }) {
       if (webLinks.length) record.websites = webLinks;
       if (acceptingStudents) record.acceptingStudents = true;
       if (openToCollaboration) record.openToCollaboration = true;
+      assertNoUndLanguageTexts(record);
 
       const written = await client.putRecord(NSID.profile, "self", record);
       const verified = await client.getRecord(NSID.profile, "self");

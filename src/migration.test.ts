@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyMigration, buildMigratedRecords, MigrationScan } from "./migration";
+import { applyMigration, buildMigratedRecords, MigrationScan, scanLegacyRecords } from "./migration";
 import { Repo } from "./repo";
 
 describe("language variant migration", () => {
@@ -73,6 +73,42 @@ describe("language variant migration", () => {
 
     expect(result).toMatchObject({ migrated: 0, repaired: 1, unresolvedReferences: 0 });
     expect(repo.records.find((record) => record.uri === authorshipUri)?.value.reference.cid).toBe("cid-new");
+  });
+
+  it("detects and relabels und variants without changing their values", async () => {
+    const uri = "at://did:plc:test/id.career.profile/self";
+    const repo = new MemoryRepo([{
+      uri,
+      cid: "cid-profile",
+      collection: "id.career.profile",
+      value: {
+        displayName: [{ language: "und-Latn", value: "Fukushima Takeru" }],
+        keywords: [{ variants: [{ language: "und", value: "分散SNS" }] }],
+      },
+    }]);
+
+    const scan = await scanLegacyRecords(repo);
+    expect(scan.candidates.map((candidate) => [candidate.sourcePath, candidate.value, candidate.mode])).toEqual([
+      ["displayName.0.language", "Fukushima Takeru", "relabel"],
+      ["keywords.0.variants.0.language", "分散SNS", "relabel"],
+    ]);
+
+    const languages = Object.fromEntries(scan.candidates.map((candidate) => [candidate.id, "ja"]));
+    const [record] = buildMigratedRecords(scan, languages);
+    expect(record.value).toMatchObject({
+      displayName: [{ language: "ja", value: "Fukushima Takeru" }],
+      keywords: [{ variants: [{ language: "ja", value: "分散SNS" }] }],
+    });
+  });
+
+  it("rejects relabeling und to a language already present in the field", () => {
+    const uri = "at://did:plc:test/pub.paper.reference/ref";
+    const scan: MigrationScan = {
+      records: [{ uri, cid: "cid", collection: "pub.paper.reference", value: { title: [{ language: "und", value: "Paper" }, { language: "en", value: "Existing" }] } }],
+      candidates: [{ id: "und", uri, collection: "pub.paper.reference", path: "title.0.language", sourcePath: "title.0.language", value: "Paper", mode: "relabel" }],
+      staleReferences: 0,
+    };
+    expect(() => buildMigratedRecords(scan, { und: "en" })).toThrow("already has a en variant");
   });
 });
 

@@ -26,8 +26,8 @@ export function MigrationTab({ client }: { client: Repo }) {
       setMsg({
         kind: "ok",
         text: next.candidates.length || next.staleReferences
-          ? text(`${next.candidates.length}件の旧形式フィールドと${next.staleReferences}件の古いStrongRefを検出しました。`, `Found ${next.candidates.length} legacy fields and ${next.staleReferences} stale StrongRefs.`)
-          : text("旧形式フィールドはありません。migrationは完了しています。", "No legacy fields remain. Migration is complete."),
+          ? text(`${next.candidates.length}件の旧形式・undフィールドと${next.staleReferences}件の古いStrongRefを検出しました。`, `Found ${next.candidates.length} legacy or und fields and ${next.staleReferences} stale StrongRefs.`)
+          : text("旧形式・undフィールドはありません。migrationは完了しています。", "No legacy or und fields remain. Migration is complete."),
       });
     } catch (error: any) {
       setMsg({ kind: "err", text: `${text("スキャン失敗", "Scan failed")}: ${error?.message ?? error}` });
@@ -98,8 +98,8 @@ export function MigrationTab({ client }: { client: Repo }) {
       <h2>{text("言語variant migration", "Language Variant Migration")}</h2>
       <p className="hint">
         {text(
-          "旧stringフィールドを対等なBCP-47言語variantへ一度だけ変換します。値の言語は自動判定しません。id.sifaの職歴は外部Lexiconのため対象外です。",
-          "This one-time operation converts legacy string fields into equal BCP-47 language variants. Languages are never inferred. External id.sifa employment records are excluded.",
+          "旧stringフィールドを言語variantへ変換し、und variantへ具体的なBCP-47タグを再指定します。値の言語は自動判定しません。id.sifaの職歴は外部Lexiconのため対象外です。",
+          "This operation converts legacy strings into language variants and assigns specific BCP-47 tags to und variants. Languages are never inferred. External id.sifa employment records are excluded.",
         )}
       </p>
       <p className="hint">
