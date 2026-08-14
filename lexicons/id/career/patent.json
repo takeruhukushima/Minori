@@ -10,7 +10,7 @@
         "type": "object",
         "required": ["title", "createdAt"],
         "properties": {
-          "title": { "type": "string", "maxLength": 3000, "maxGraphemes": 300 },
+          "title": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "id.career.defs#languageText" } },
           "rightType": { "type": "string", "knownValues": ["patent", "utilityModel", "designRight", "trademark", "plantVariety"] },
           "jurisdiction": { "type": "string", "maxLength": 8, "description": "ISO 3166-1 alpha-2, or 'WO' for PCT and 'EP' for European applications." },
           "applicationNumber": { "type": "string", "maxLength": 64, "description": "e.g. '特願2020-001413', 'US 17/123,456'. Usually the only number that exists for years." },

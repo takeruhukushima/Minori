@@ -103,9 +103,10 @@
             "description": "Venue acceptance rate as printed, e.g. '18.4%'. Conventional in computer science CVs, meaningless elsewhere -- optional and never inferred."
           },
           "authorNameUsed": {
-            "type": "string",
-            "maxLength": 640,
-            "maxGraphemes": 64,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" },
             "description": "The name form under which this work was published, when it differs from the current profile name (name changes, romanisation variants). Essential for disambiguation."
           },
           "disclosure": {
@@ -117,9 +118,10 @@
             "description": "ADVISORY ONLY, NOT PRIVACY. atproto records are public; 'unlisted' merely asks well-behaved clients to omit this from default CV renders. Anything that must stay secret must not be written to a PDS at all."
           },
           "note": {
-            "type": "string",
-            "maxLength": 4000,
-            "maxGraphemes": 800
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" }
           },
           "labels": {
             "type": "union",

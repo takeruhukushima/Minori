@@ -15,9 +15,10 @@
         ],
         "properties": {
           "title": {
-            "type": "string",
-            "maxLength": 3000,
-            "maxGraphemes": 300,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" },
             "description": "Project title as submitted."
           },
           "funder": {
@@ -26,9 +27,10 @@
             "description": "Funding body. ROR strongly preferred: funder name strings are notoriously inconsistent across a career."
           },
           "programName": {
-            "type": "string",
-            "maxLength": 1000,
-            "maxGraphemes": 200,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" },
             "description": "e.g. '科学研究費助成事業 基盤研究(C)', 'ERC Starting Grant'."
           },
           "awardNumber": {

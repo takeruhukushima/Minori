@@ -45,20 +45,18 @@
             "description": "Stable citation key, e.g. 'yamada2024diffusion'. Stored, not derived: a regenerated key silently breaks every \\cite{} in every manuscript that used it. Treat as immutable once set. Unique per account by convention, not by protocol."
           },
           "title": {
-            "type": "string",
-            "maxLength": 3000,
-            "maxGraphemes": 300
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "pub.paper.defs#languageText" },
+            "description": "Equal language variants of the work's title. No variant is designated as primary or original."
           },
           "shortTitle": {
-            "type": "string",
-            "maxLength": 600,
-            "maxGraphemes": 60
-          },
-          "originalTitle": {
-            "type": "string",
-            "maxLength": 3000,
-            "maxGraphemes": 300,
-            "description": "Title in the original language when `title` holds a translation. Common for Japanese-language work cited in an English CV."
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "pub.paper.defs#languageText" },
+            "description": "Equal language variants of the semantically separate abbreviated title."
           },
           "contributors": {
             "type": "array",
@@ -78,21 +76,24 @@
             "ref": "pub.paper.defs#date"
           },
           "containerTitle": {
-            "type": "string",
-            "maxLength": 1000,
-            "maxGraphemes": 100,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "pub.paper.defs#languageText" },
             "description": "Journal name, proceedings title, or book title for a chapter."
           },
           "containerTitleShort": {
-            "type": "string",
-            "maxLength": 400,
-            "maxGraphemes": 40,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "pub.paper.defs#languageText" },
             "description": "Abbreviated journal name (ISO 4), e.g. 'J. Chem. Phys.'. Many venues require it and machine derivation from the full name is unreliable, so store both."
           },
           "collectionTitle": {
-            "type": "string",
-            "maxLength": 1000,
-            "maxGraphemes": 100,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "pub.paper.defs#languageText" },
             "description": "Series title, e.g. 'Lecture Notes in Computer Science'."
           },
           "collectionNumber": {
@@ -100,14 +101,16 @@
             "maxLength": 64
           },
           "publisher": {
-            "type": "string",
-            "maxLength": 1000,
-            "maxGraphemes": 100
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "pub.paper.defs#languageText" }
           },
           "publisherPlace": {
-            "type": "string",
-            "maxLength": 500,
-            "maxGraphemes": 50
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "pub.paper.defs#languageText" }
           },
           "volume": {
             "type": "string",
@@ -128,8 +131,10 @@
             "maxLength": 32
           },
           "edition": {
-            "type": "string",
-            "maxLength": 64
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "pub.paper.defs#languageText" }
           },
           "chapterNumber": {
             "type": "string",
@@ -146,20 +151,24 @@
             "description": "Report, patent, or standard number."
           },
           "genre": {
-            "type": "string",
-            "maxLength": 200,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "pub.paper.defs#languageText" },
             "description": "Sub-type rendered verbatim: 'PhD thesis', 'Technical report', '修士論文'."
           },
           "event": {
-            "type": "string",
-            "maxLength": 1000,
-            "maxGraphemes": 100,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "pub.paper.defs#languageText" },
             "description": "Conference name when different from containerTitle."
           },
           "eventPlace": {
-            "type": "string",
-            "maxLength": 500,
-            "maxGraphemes": 50
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "pub.paper.defs#languageText" }
           },
           "eventDate": {
             "type": "ref",
@@ -214,14 +223,16 @@
             "description": "Optional AT-URI of a richer record for the same work elsewhere in the network, e.g. a pub.oxa.* scientific document. Lets the library point at first-class content instead of duplicating it."
           },
           "abstract": {
-            "type": "string",
-            "maxLength": 20000,
-            "maxGraphemes": 5000
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "pub.paper.defs#languageText" }
           },
           "note": {
-            "type": "string",
-            "maxLength": 4000,
-            "maxGraphemes": 1000,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "pub.paper.defs#languageText" },
             "description": "Bibliographic note belonging in the citation itself (BibTeX `note`). Personal commentary goes in pub.paper.readingStatus."
           },
           "language": {
@@ -233,9 +244,8 @@
             "type": "array",
             "maxLength": 50,
             "items": {
-              "type": "string",
-              "maxLength": 200,
-              "maxGraphemes": 40
+              "type": "ref",
+              "ref": "pub.paper.defs#keywordConcept"
             }
           },
           "license": {

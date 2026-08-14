@@ -15,9 +15,10 @@
         ],
         "properties": {
           "name": {
-            "type": "string",
-            "maxLength": 500,
-            "maxGraphemes": 100,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" },
             "description": "e.g. 'Academic CV (EN)', '業績一覧 2026年度'."
           },
           "purpose": {
@@ -62,9 +63,10 @@
             "description": "Bold or underline the profile owner's name in author lists, expected by most application formats."
           },
           "headerNote": {
-            "type": "string",
-            "maxLength": 5000,
-            "maxGraphemes": 1000,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" },
             "description": "Free text placed above the first section, e.g. a research statement summary."
           },
           "templateUrl": {

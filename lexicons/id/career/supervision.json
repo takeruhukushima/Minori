@@ -17,7 +17,7 @@
           "startedAt": { "type": "string", "maxLength": 10, "description": "YYYY, YYYY-MM, or YYYY-MM-DD." },
           "endedAt": { "type": "string", "maxLength": 10 },
           "status": { "type": "string", "knownValues": ["inProgress", "completed", "discontinued"], "description": "'discontinued' is recorded neutrally and carries no judgement; clients should not render it as a negative outcome." },
-          "thesisTitle": { "type": "string", "maxLength": 3000, "maxGraphemes": 300, "description": "Only with the student's consent, since a thesis title identifies them as surely as a name." },
+          "thesisTitle": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "id.career.defs#languageText" }, "description": "Equal language variants. Only with the student's consent, since a thesis title identifies them as surely as a name." },
           "thesisRef": { "type": "ref", "ref": "com.atproto.repo.strongRef", "description": "StrongRef to a pub.paper.reference for the deposited thesis. Once a thesis is publicly deposited its authorship is already public." },
           "coSupervisors": { "type": "array", "maxLength": 10, "items": { "type": "ref", "ref": "id.career.defs#personRef" } },
           "createdAt": { "type": "string", "format": "datetime" },

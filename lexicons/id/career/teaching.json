@@ -10,12 +10,12 @@
         "type": "object",
         "required": ["courseName", "institution", "createdAt"],
         "properties": {
-          "courseName": { "type": "string", "maxLength": 1000, "maxGraphemes": 200 },
+          "courseName": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "id.career.defs#languageText" } },
           "courseCode": { "type": "string", "maxLength": 100 },
           "institution": { "type": "ref", "ref": "id.career.defs#organization" },
           "level": { "type": "string", "knownValues": ["undergraduate", "graduate", "doctoral", "professional", "highSchool", "continuingEducation", "outreach"] },
           "role": { "type": "string", "knownValues": ["instructor", "coInstructor", "ta", "guestLecturer", "labInstructor", "courseDesigner", "tutor"], "description": "Kept explicit because 'taught a course' and 'TA'd a course' are routinely conflated on CVs and mean very different things to a hiring committee." },
-          "term": { "type": "string", "maxLength": 200, "maxGraphemes": 40, "description": "Term label as printed, e.g. '2025 Spring', '2025年度前期'. Free text: academic calendars are not standardised." },
+          "term": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "id.career.defs#languageText" }, "description": "Equal language variants of the term label as printed. Free text: academic calendars are not standardised." },
           "startedAt": { "type": "string", "maxLength": 10, "description": "YYYY, YYYY-MM, or YYYY-MM-DD. Needed for sorting, since `term` is not machine-orderable." },
           "endedAt": { "type": "string", "maxLength": 10 },
           "credits": { "type": "string", "maxLength": 32, "description": "String because credit systems differ (ECTS, 単位, semester hours)." },
@@ -24,7 +24,7 @@
           "isNewCourse": { "type": "boolean", "description": "Whether the person designed the course from scratch, which weighs differently from inheriting one." },
           "syllabusUrl": { "type": "string", "format": "uri" },
           "materialsUrl": { "type": "string", "format": "uri", "description": "Openly released course materials, e.g. a public repository." },
-          "description": { "type": "string", "maxLength": 5000, "maxGraphemes": 1000 },
+          "description": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "id.career.defs#languageText" } },
           "createdAt": { "type": "string", "format": "datetime" },
           "updatedAt": { "type": "string", "format": "datetime" }
         }

@@ -12,7 +12,7 @@
         "properties": {
           "collection": { "type": "ref", "ref": "com.atproto.repo.strongRef" },
           "reference": { "type": "ref", "ref": "com.atproto.repo.strongRef" },
-          "note": { "type": "string", "maxLength": 10000, "maxGraphemes": 2000, "description": "Why this paper is in THIS collection: 'cite for the baseline comparison', 'reviewer 2 asked for this'. Distinct from a reading note, which is not collection-specific." },
+          "note": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "pub.paper.defs#languageText" }, "description": "Equal language variants explaining why this paper is in THIS collection. Distinct from a reading note, which is not collection-specific." },
           "sections": {
             "type": "array",
             "maxLength": 20,

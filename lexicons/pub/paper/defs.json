@@ -3,6 +3,23 @@
   "id": "pub.paper.defs",
   "description": "Shared object definitions for bibliographic records. Field names and semantics deliberately mirror CSL-JSON so that records round-trip losslessly to CSL-JSON, and from there to BibTeX/biblatex, RIS, and any CSL style.",
   "defs": {
+    "languageText": {
+      "type": "object",
+      "description": "One language variant of bibliographic display text.",
+      "required": ["language", "value"],
+      "properties": {
+        "language": { "type": "string", "maxLength": 32, "description": "BCP-47 language tag." },
+        "value": { "type": "string", "maxLength": 20000, "maxGraphemes": 5000 }
+      }
+    },
+    "keywordConcept": {
+      "type": "object",
+      "description": "One keyword concept with equal language variants.",
+      "required": ["variants"],
+      "properties": {
+        "variants": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "pub.paper.defs#languageText" } }
+      }
+    },
     "contributor": {
       "type": "object",
       "description": "One contributor to a work. Mirrors a CSL-JSON name object, plus atproto-native identity fields. Either the structured name fields or `literal` must be present, never both.",
@@ -12,13 +29,13 @@
           "type": "string",
           "knownValues": ["author", "editor", "translator", "chair", "collection-editor", "composer", "container-author", "director", "illustrator", "interviewer", "original-author", "recipient", "reviewed-author"]
         },
-        "family": { "type": "string", "maxLength": 640, "maxGraphemes": 64, "description": "Family name. For CJK names, the surname (e.g. 山田)." },
-        "given": { "type": "string", "maxLength": 640, "maxGraphemes": 64, "description": "Given name(s). For CJK names, the personal name (e.g. 太郎)." },
-        "suffix": { "type": "string", "maxLength": 320, "maxGraphemes": 32 },
-        "droppingParticle": { "type": "string", "maxLength": 320, "maxGraphemes": 32, "description": "Particle dropped when the given name is omitted, e.g. 'van' in 'Ludwig van Beethoven'." },
-        "nonDroppingParticle": { "type": "string", "maxLength": 320, "maxGraphemes": 32, "description": "Particle retained when the given name is omitted, e.g. 'de' in 'Charles de Gaulle'." },
-        "literal": { "type": "string", "maxLength": 1280, "maxGraphemes": 128, "description": "Unstructured name, for organisations or mononyms. Use INSTEAD OF family/given." },
-        "latinized": { "type": "string", "maxLength": 640, "maxGraphemes": 64, "description": "Romanised form, for CJK authors cited in Latin script." },
+        "family": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "pub.paper.defs#languageText" }, "description": "Equal language variants of the family name. For CJK names, the surname (e.g. 山田)." },
+        "given": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "pub.paper.defs#languageText" }, "description": "Equal language variants of the given name(s). For CJK names, the personal name (e.g. 太郎)." },
+        "suffix": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "pub.paper.defs#languageText" } },
+        "droppingParticle": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "pub.paper.defs#languageText" }, "description": "Equal language variants of the particle dropped when the given name is omitted." },
+        "nonDroppingParticle": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "pub.paper.defs#languageText" }, "description": "Equal language variants of the particle retained when the given name is omitted." },
+        "literal": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "pub.paper.defs#languageText" }, "description": "Equal language variants of an unstructured name, for organisations or mononyms. Use INSTEAD OF family/given." },
+        "latinized": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "pub.paper.defs#languageText" }, "description": "Romanised variants, for CJK authors cited in Latin script." },
         "did": { "type": "string", "format": "did", "description": "atproto DID of this contributor, when known. Lets an AppView link a citation to a live account." },
         "orcid": { "type": "string", "maxLength": 32, "description": "Bare ORCID iD, e.g. '0000-0002-1825-0097'. No https://orcid.org/ prefix." },
         "sequence": { "type": "integer", "minimum": 1, "description": "1-based position within this role's list. Required for correct BibTeX output if a client reorders the array." },

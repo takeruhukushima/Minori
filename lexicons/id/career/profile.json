@@ -13,38 +13,44 @@
         ],
         "properties": {
           "displayName": {
-            "type": "string",
-            "maxLength": 640,
-            "maxGraphemes": 64,
-            "description": "Name as it should appear on a CV, in the profile's primary locale."
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" },
+            "description": "Equal language variants of the name as it should appear on a CV."
           },
           "nativeName": {
-            "type": "string",
-            "maxLength": 640,
-            "maxGraphemes": 64,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" },
             "description": "Name in the native script, e.g. '山田 太郎', when displayName is romanised. Both are needed: publications appear under both forms."
           },
           "namePreferredCitation": {
-            "type": "string",
-            "maxLength": 640,
-            "maxGraphemes": 64,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" },
             "description": "How the person prefers to be cited, e.g. 'T. Yamada'. Disambiguation matters more here than aesthetics."
           },
           "pronouns": {
-            "type": "string",
-            "maxLength": 100,
-            "maxGraphemes": 20
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" }
           },
           "headline": {
-            "type": "string",
-            "maxLength": 1000,
-            "maxGraphemes": 200,
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" },
             "description": "One line, e.g. 'Assistant Professor of Computational Biology'."
           },
           "bio": {
-            "type": "string",
-            "maxLength": 15000,
-            "maxGraphemes": 3000
+            "type": "array",
+            "minLength": 1,
+            "maxLength": 20,
+            "items": { "type": "ref", "ref": "id.career.defs#languageText" }
           },
           "primaryAffiliation": {
             "type": "ref",
@@ -102,9 +108,8 @@
             "type": "array",
             "maxLength": 30,
             "items": {
-              "type": "string",
-              "maxLength": 200,
-              "maxGraphemes": 40
+              "type": "ref",
+              "ref": "id.career.defs#keywordConcept"
             }
           },
           "languages": {
@@ -165,9 +170,10 @@
               ],
               "properties": {
                 "name": {
-                  "type": "string",
-                  "maxLength": 300,
-                  "maxGraphemes": 60,
+                  "type": "array",
+                  "minLength": 1,
+                  "maxLength": 20,
+                  "items": { "type": "ref", "ref": "id.career.defs#languageText" },
                   "description": "e.g. '工学博士', 'Ph.D.'"
                 },
                 "institution": {

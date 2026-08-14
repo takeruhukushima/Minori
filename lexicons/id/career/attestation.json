@@ -17,8 +17,8 @@
           "relationship": { "type": "string", "knownValues": ["coAuthor", "supervisor", "supervisee", "colleague", "employer", "institution", "funder", "organizer", "editor", "committeeMember", "collaborator"], "description": "How the attester knows. A co-author confirming co-authorship carries different weight from a colleague confirming it, and consumers should be able to tell." },
           "assertion": { "type": "string", "knownValues": ["confirms", "confirmsWithCorrection", "disputes"], "description": "'disputes' is included on purpose. An attestation layer that can only affirm is a reputation system, not a verification system." },
           "entityRef": { "type": "string", "format": "uri", "description": "Wikidata Q-ID, ROR, or LEI URI of the attesting organisation, when the attester writes on an institution's behalf. Mirrors the id.sifa.* convention: never pin a free-text organisation name." },
-          "attesterRole": { "type": "string", "maxLength": 500, "maxGraphemes": 100, "description": "The attester's role at the time, e.g. 'Department Head', 'corresponding author'." },
-          "statement": { "type": "string", "maxLength": 3000, "maxGraphemes": 600, "description": "Optional short comment. Not a letter of recommendation: this layer verifies facts, it does not evaluate people." },
+          "attesterRole": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "id.career.defs#languageText" }, "description": "Equal language variants of the attester's role at the time." },
+          "statement": { "type": "array", "minLength": 1, "maxLength": 20, "items": { "type": "ref", "ref": "id.career.defs#languageText" }, "description": "Equal language variants of an optional short comment. Not a letter of recommendation: this layer verifies facts, it does not evaluate people." },
           "validFrom": { "type": "string", "format": "datetime" },
           "labels": { "type": "union", "refs": ["com.atproto.label.defs#selfLabels"] },
           "createdAt": { "type": "string", "format": "datetime" }
