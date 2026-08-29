@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#11221a"/>
+  <rect x="0" y="0" width="1200" height="8" fill="#22aa66"/>
+  <text x="80" y="330" font-family="system-ui, sans-serif" font-size="88" font-weight="700" fill="#ffffff">Academic CV</text>
+  <text x="80" y="420" font-family="system-ui, sans-serif" font-size="40" fill="#9fdcbf">Powered by Minori · AT Protocol</text>
+</svg>

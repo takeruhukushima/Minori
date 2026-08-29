@@ -1,0 +1,59 @@
+name: Deploy Minori to GitHub Pages
+
+# Official public build. Serves the whole SPA (editor + public CV view) as a
+# static site. The public CV resolves handle -> DID -> PDS at read time in the
+# viewer's browser, so no PDS data is baked in and no redeploy is needed when a
+# researcher updates their records.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build
+        env:
+          # Project sites live at https://<owner>.github.io/<repo>/. Deriving
+          # both from the repository makes forks work with no edits.
+          VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_PUBLIC_URL: https://${{ github.repository_owner }}.github.io
+        run: pnpm build
+      - name: SPA 404 fallback
+        # Hash routes never hit the server, but a stray deep link should still
+        # land on the app instead of GitHub's 404.
+        run: cp dist/index.html dist/404.html
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -5,6 +5,7 @@ import {
   type OAuthClientMetadataInput,
 } from "@atproto/oauth-client-browser";
 import { AgentRepo, Repo } from "./repo";
+import { resolveDidToHandle } from "./public/identity";
 
 // OAuth is the primary, secure auth path for the public/multi-user goal:
 // the user authenticates on their own PDS, this app never sees a password,
@@ -51,18 +52,22 @@ export function clientId(): string {
     id.searchParams.set("scope", SCOPE);
     return id.href;
   }
-  const configured = import.meta.env.VITE_PUBLIC_URL?.replace(/\/+$/, "");
-  return `${configured || location.origin}/client-metadata.json`;
+  // The metadata lives at <base>client-metadata.json under the app's origin.
+  // BASE_URL is "/" normally and "/Minori/" on GitHub Pages, so this resolves
+  // to the correct URL for either deployment.
+  const origin = import.meta.env.VITE_PUBLIC_URL || location.origin;
+  return new URL(`${import.meta.env.BASE_URL}client-metadata.json`, origin).href;
 }
 
-// The metadata object served at /client-metadata.json in production.
+// The metadata object served at <base>client-metadata.json in production.
 // Keep in sync with the generated metadata in vite.config.ts.
 export function productionMetadata(origin: string): OAuthClientMetadataInput {
+  const appUrl = new URL(import.meta.env.BASE_URL, origin).href;
   return {
-    client_id: `${origin}/client-metadata.json`,
+    client_id: `${appUrl}client-metadata.json`,
     client_name: "Minori",
-    client_uri: origin,
-    redirect_uris: [`${origin}/`],
+    client_uri: appUrl,
+    redirect_uris: [appUrl],
     scope: SCOPE,
     grant_types: ["authorization_code", "refresh_token"],
     response_types: ["code"],
@@ -110,16 +115,20 @@ async function initializeOAuth(): Promise<OAuthInitResult | null> {
   if (!result?.session) return null;
   const agent = new Agent(result.session);
   const did = result.session.did;
-  let handle = did;
+  let handle: string = did;
   try {
-    const prof = await agent.com.atproto.repo.getRecord({
-      repo: did,
-      collection: "app.bsky.actor.profile",
-      rkey: "self",
-    });
-    handle = (prof.data.value as any)?.displayName ?? did;
+    const identifier = did as `did:plc:${string}` | `did:web:${string}`;
+    const identity = await agent.com.atproto.identity.resolveIdentity({ identifier });
+    if (identity.data.handle !== "handle.invalid") handle = identity.data.handle;
   } catch {
-    // no bsky profile is fine
+    // Some PDS implementations do not expose resolveIdentity.
+  }
+  if (handle === did) {
+    try {
+      handle = await resolveDidToHandle(did);
+    } catch {
+      // A DID is also a valid public CV identifier.
+    }
   }
   return { repo: new AgentRepo(agent), handle, did };
 }

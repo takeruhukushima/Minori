@@ -70,12 +70,36 @@ export function assertNoUndLanguageTexts(value: unknown): void {
 }
 
 export function pickLanguageText(value: unknown, requestedLanguage: string): string {
+  return resolveLanguageText(value, requestedLanguage).value;
+}
+
+export interface ResolvedText {
+  value: string;
+  language: string;
+  // True when the requested language (and its base subtag) had no variant and
+  // we fell back to another one. Lets the public CV mark fallback content in a
+  // consistent way (requirement 11).
+  fellBack: boolean;
+}
+
+// Same resolution order as pickLanguageText (exact -> base subtag -> first
+// available) but reports which variant was chosen and whether it was a
+// fallback, so the UI can surface it.
+export function resolveLanguageText(value: unknown, requestedLanguage: string): ResolvedText {
+  // Records written before language variants were introduced stored these
+  // fields as plain strings. Keep them readable without permitting new writes
+  // in the legacy shape.
+  if (typeof value === "string") {
+    return { value: value.trim(), language: requestedLanguage, fellBack: false };
+  }
   const variants = normalizeLanguageTexts(value);
-  if (!variants.length) return "";
+  if (!variants.length) return { value: "", language: "", fellBack: false };
   const exact = variants.find((item) => item.language.toLowerCase() === requestedLanguage.toLowerCase());
-  if (exact) return exact.value;
+  if (exact) return { value: exact.value, language: exact.language, fellBack: false };
   const base = requestedLanguage.split("-")[0].toLowerCase();
-  return variants.find((item) => item.language.split("-")[0].toLowerCase() === base)?.value ?? variants[0].value;
+  const baseMatch = variants.find((item) => item.language.split("-")[0].toLowerCase() === base);
+  if (baseMatch) return { value: baseMatch.value, language: baseMatch.language, fellBack: false };
+  return { value: variants[0].value, language: variants[0].language, fellBack: true };
 }
 
 export function upsertLanguageText(value: unknown, language: string, text: string): LanguageText[] {

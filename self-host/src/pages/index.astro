@@ -1,0 +1,93 @@
+---
+import { loadCvModel } from "../../../src/public/cvModel";
+import { pickLanguageText } from "../../../src/languageText";
+import { StaticCv } from "../../../src/cv/StaticCv";
+import config from "../../minori.config.ts";
+
+// Build-time fetch. If identity resolution fails this throws and the build
+// fails, so a broken run never replaces the last good deploy (requirement 10).
+const cv = await loadCvModel(config.handle);
+const locale = config.locale;
+const profile = cv.profile?.value ?? null;
+
+const name = pickLanguageText(profile?.displayName, locale) || config.handle;
+const headline = pickLanguageText(profile?.headline, locale);
+const bio = pickLanguageText(profile?.bio, locale);
+const description = [headline, bio].filter(Boolean).join(" — ").slice(0, 300) || `${name} — academic CV`;
+const canonical = config.siteUrl.replace(/\/+$/, "") + "/";
+const ogImage = cv.avatar || `${canonical}default-og.svg`;
+
+// schema.org Person, with only fields we have real evidence for.
+const sameAs = [
+  profile?.orcid && `https://orcid.org/${profile.orcid}`,
+  profile?.researchmapId && `https://researchmap.jp/${profile.researchmapId}`,
+  profile?.googleScholarId && `https://scholar.google.com/citations?user=${profile.googleScholarId}`,
+].filter(Boolean);
+
+const personLd = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name,
+  url: canonical,
+  ...(headline ? { jobTitle: headline } : {}),
+  ...(bio ? { description: bio } : {}),
+  ...(sameAs.length ? { sameAs } : {}),
+  ...(profile?.primaryAffiliation?.name
+    ? { affiliation: { "@type": "Organization", name: pickLanguageText(profile.primaryAffiliation.name, locale) } }
+    : {}),
+};
+
+const articlesLd = cv.publications
+  .filter((p) => p.reference)
+  .slice(0, 200)
+  .map((p) => ({
+    "@context": "https://schema.org",
+    "@type": "ScholarlyArticle",
+    headline: pickLanguageText(p.reference!.value?.title, locale),
+    ...(p.reference!.value?.issued?.year ? { datePublished: String(p.reference!.value.issued.year) } : {}),
+    ...(p.reference!.value?.doi ? { sameAs: `https://doi.org/${p.reference!.value.doi}` } : {}),
+    author: { "@type": "Person", name },
+  }));
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{name} — CV</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    <meta property="og:type" content="profile" />
+    <meta property="og:title" content={`${name} — CV`} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={`${name} — CV`} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+
+    <script type="application/ld+json" set:html={JSON.stringify(personLd)} />
+    {articlesLd.length > 0 && (
+      <script type="application/ld+json" set:html={JSON.stringify(articlesLd)} />
+    )}
+
+    <style is:global>
+      :root { color-scheme: light; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif;
+        line-height: 1.5;
+        color: #1a1a1a;
+        background: #fff;
+      }
+      a { color: #1a6; }
+    </style>
+  </head>
+  <body>
+    <!-- No client directive: rendered to static HTML, readable with JS disabled. -->
+    <StaticCv cv={cv} locale={locale} />
+  </body>
+</html>

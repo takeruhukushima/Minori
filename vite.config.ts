@@ -24,20 +24,24 @@ const scope = [
   "id.career.openSourceContribution",
 ].map((value, index) => index === 0 ? value : `repo:${value}`).join(" ");
 
-function oauthMetadata(origin?: string): Plugin {
+function oauthMetadata(origin: string | undefined, base: string): Plugin {
   return {
     name: "minori-oauth-metadata",
     generateBundle() {
       if (!origin) return;
       const normalized = origin.replace(/\/+$/, "");
+      // On GitHub Pages the app is served under a base path (e.g. /Minori/), so
+      // the OAuth client_id, client_uri, and redirect_uri must all include it.
+      const basePath = base.endsWith("/") ? base : `${base}/`;
+      const appUrl = `${normalized}${basePath}`; // e.g. https://user.github.io/Minori/
       this.emitFile({
         type: "asset",
         fileName: "client-metadata.json",
         source: JSON.stringify({
-          client_id: `${normalized}/client-metadata.json`,
+          client_id: `${appUrl}client-metadata.json`,
           client_name: "Minori",
-          client_uri: normalized,
-          redirect_uris: [`${normalized}/`],
+          client_uri: appUrl,
+          redirect_uris: [appUrl],
           scope,
           grant_types: ["authorization_code", "refresh_token"],
           response_types: ["code"],
@@ -57,8 +61,12 @@ export default defineConfig(({ mode }) => {
   // this for a future custom domain.
   const publicUrl =
     env.VITE_PUBLIC_URL || env.CF_PAGES_URL || "https://minori.takeruf.workers.dev";
+  // Base path. GitHub Pages project sites live under /<repo>/; the deploy
+  // workflow sets VITE_BASE=/Minori/. Localhost and Cloudflare stay at "/".
+  const base = env.VITE_BASE || "/";
   return {
-    plugins: [react(), oauthMetadata(publicUrl)],
+    base,
+    plugins: [react(), oauthMetadata(publicUrl, base)],
     server: { host: "127.0.0.1", port: 5173 },
     build: {
       rollupOptions: {
