@@ -8,16 +8,35 @@ import { CvTab } from "./tabs/CvTab";
 import { ProjectsTab } from "./tabs/ProjectsTab";
 import { PdsDiagnostic } from "./PdsDiagnostic";
 import { LocaleSwitcher, useI18n } from "./i18n";
+import { useHashRoute, cvHref, discoverHref } from "./hashRoute";
+import { PublicCv } from "./cv/PublicCv";
+import { CollectionDetail } from "./cv/CollectionDetail";
+import { Discover } from "./cv/Discover";
 
 type Tab = "cv" | "projects";
 
 interface SignedIn {
   repo: Repo;
   label: string;
+  handle: string;
+  did: string;
   logout: () => void | Promise<void>;
 }
 
+// Top-level router: an unauthenticated public CV route, or the editing app.
 export function App() {
+  const route = useHashRoute();
+  if (route.kind === "discover") return <Discover />;
+  if (route.kind === "collection") {
+    return <CollectionDetail handle={route.handle} rkey={route.rkey} />;
+  }
+  if (route.kind === "cv") {
+    return <PublicCv handle={route.handle} anchor={route.anchor} />;
+  }
+  return <EditorApp />;
+}
+
+function EditorApp() {
   const { text } = useI18n();
   const [state, setState] = useState<"loading" | SignedIn | null>("loading");
   const [tab, setTab] = useState<Tab>("cv");
@@ -33,6 +52,8 @@ export function App() {
           setState({
             repo: r.repo,
             label: `${r.handle}`,
+            handle: r.handle,
+            did: r.did,
             logout: async () => {
               await oauthSignOut();
               location.reload();
@@ -77,7 +98,7 @@ export function App() {
 
   if (state === null) return <Login onPasswordLogin={onPasswordLogin} />;
 
-  const { repo, label, logout } = state;
+  const { repo, label, handle, logout } = state;
 
   return (
     <div className="app">
@@ -85,6 +106,16 @@ export function App() {
         <h1>Minori</h1>
         <div className="row">
           <span className="who">{label}</span>
+          <a className="btn ghost small" href={discoverHref()}>{text("公開CVを探す", "Find public CVs")}</a>
+          <a
+            className="btn ghost small"
+            href={cvHref(handle)}
+            target="_blank"
+            rel="noopener"
+            title={text("公開CVはPDS上の公開情報から生成されます", "The public CV is generated from public records on your PDS")}
+          >
+            {text("公開CVを表示", "View public CV")}
+          </a>
           <LocaleSwitcher />
           <button className="btn ghost small" onClick={() => logout()}>
             {text("ログアウト", "Log out")}
@@ -126,6 +157,8 @@ function makePasswordState(
   return {
     repo: client,
     label: `${s.handle} · app-pw`,
+    handle: s.handle,
+    did: s.did,
     logout: () => {
       saveSession(null);
       setState(null);

@@ -22,4 +22,9 @@ describe("language text variants", () => {
     expect(() => specificLanguageTag("und-Latn")).toThrow("specific BCP-47");
     expect(() => assertNoUndLanguageTexts({ nested: [{ language: "und-Latn", value: "Unknown" }] })).toThrow("specific language");
   });
+
+  it("reads legacy plain-string fields without accepting them for new writes", () => {
+    expect(pickLanguageText(" Legacy title ", "ja")).toBe("Legacy title");
+    expect(normalizeLanguageTextsForWrite("Legacy title")).toEqual([]);
+  });
 });

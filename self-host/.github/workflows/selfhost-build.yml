@@ -1,0 +1,53 @@
+name: Build self-host CV
+
+# Rebuilds the static CV from your PDS. Run it manually after you update your
+# CV, or let the weekly schedule pick up changes. Because the CV is fetched at
+# build time, nothing here stores your data.
+#
+# NOTE: when this directory is the ROOT of your self-host repo (template/fork),
+# move this file to `.github/workflows/selfhost-build.yml` at the repo root and
+# drop the `working-directory` / path prefixes below.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly, Monday 00:00 UTC. Change to taste (e.g. "0 0 * * *" for daily).
+    - cron: "0 0 * * 1"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build (fails if the PDS is unreachable)
+        run: pnpm build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

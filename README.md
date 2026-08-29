@@ -2,6 +2,36 @@
 
 AT Protocol上に学術CVとプロジェクト別の文献を保存する、完全クライアントサイドのReactアプリです。OAuth後の書き込みは利用者自身のPDSへ直接行われ、Minori側にパスワードやデータベースはありません。PDS上のレコードは公開情報です。
 
+## 公開CVビュー
+
+未ログインの第三者が、handleまたはDIDを指定してResearchmap風の公開学術CVを閲覧できます。取得は閲覧者のブラウザから直接PDSへ行われ、新しいサーバー・AppView・キャッシュDBは追加しません。
+
+```text
+# 研究者CVのroot
+https://<host>/#/username.bsky.social
+
+# 公開CV検索
+https://<host>/#/discover
+
+# CV内セクション（描画後に該当anchorへスクロール）
+https://<host>/#/username.bsky.social/publications
+https://<host>/#/username.bsky.social/collections
+
+# 文献リスト詳細
+https://<host>/#/username.bsky.social/collections/<collection-rkey>
+```
+
+- handle → DID → PDS を解決し、公開XRPCで各コレクションを取得します（`src/public/identity.ts`, `publicClient.ts`）。
+- UI言語（日本語/英語）とCVコンテンツ言語（BCP-47 variant）は独立して切り替えられます。
+- 目次とanchorは取得できたレコードカテゴリから動的生成し、空セクションは表示しません。
+- 公開CV検索はBlueskyの検索候補を各PDSで検証し、`id.career.profile`を持つユーザーだけを表示します。完全な全件一覧にはAppViewによる継続的な索引が必要です。
+- 印刷CSSでA4相当のCVを出力できます。編集画面のトップバーに「公開CVを表示」導線があります。
+
+### 提供モード
+
+- **公式版（GitHub Pages）**: 共通URLの `#/<handle>` から任意の研究者CVを動的表示します。PDS更新後の再デプロイは不要です。`.github/workflows/pages-deploy.yml` がビルドとデプロイを行い、`VITE_BASE`（`/<repo>/`）と `VITE_PUBLIC_URL` はリポジトリから自動導出されるのでForkでもそのまま動きます。
+- **セルフホスト版（Astro 静的生成）**: 研究者がリポジトリをForkまたはTemplate利用し、自分のPDSからビルド時に取得した一枚の静的CV（JS無効でも表示可・SEO対応）を自分のGitHub Pagesへデプロイします。手順は [`self-host/README.md`](./self-host/README.md) を参照してください。
+
 ## ローカル開発
 
 ```sh

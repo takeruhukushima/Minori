@@ -30,6 +30,9 @@ describe("verifyPdsWrite", () => {
     const client = repo();
     await expect(verifyPdsWrite(client)).resolves.toBeUndefined();
     expect(client.createRecord).toHaveBeenCalledOnce();
+    expect(client.createRecord).toHaveBeenCalledWith("pub.paper.collection", expect.objectContaining({
+      name: [{ language: "en", value: "Minori PDS write diagnostic" }],
+    }));
     expect(client.getRecord).toHaveBeenCalledTimes(2);
     expect(client.deleteRecord).toHaveBeenCalledOnce();
   });

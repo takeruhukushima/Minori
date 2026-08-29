@@ -46,7 +46,9 @@ function normalizeService(service: string): string {
   return s.replace(/\/+$/, "");
 }
 
-async function rawCall(
+// Exported so the unauthenticated public-CV read client can reuse the exact
+// same XRPC transport (token is optional, so GETs work without auth).
+export async function rawCall(
   service: string,
   method: "GET" | "POST",
   nsid: string,

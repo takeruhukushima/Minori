@@ -178,6 +178,20 @@ button.btn.danger { background: transparent; color: var(--danger); border: 1px s
 
 .login-wrap { max-width: 420px; margin: 12vh auto 0; }
 .center-note { color: var(--muted); font-size: 12px; text-align: center; margin-top: 16px; }
+.discover-header { max-width: 680px; margin: 64px 0 28px; }
+.discover-header h1 { margin: 8px 0 10px; font-size: clamp(32px, 6vw, 54px); letter-spacing: -.04em; }
+.discover-header p { color: var(--muted); }
+.discover-search { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: end; }
+.discover-search .toolbar { margin: 0; }
+.discover-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+.discover-user { display: flex; gap: 12px; min-width: 0; padding: 14px; color: var(--text); text-decoration: none; background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); transition: border-color 120ms ease, transform 120ms ease; }
+.discover-user:hover { border-color: var(--accent); transform: translateY(-1px); }
+.discover-user img, .discover-avatar { width: 52px; height: 52px; flex: 0 0 auto; border-radius: 50%; object-fit: cover; }
+.discover-avatar { display: grid; place-items: center; color: var(--accent-fg); background: var(--accent); font-weight: 700; }
+.discover-user-copy { display: flex; min-width: 0; flex-direction: column; }
+.discover-user-copy strong, .discover-user-copy small, .discover-user-copy > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.discover-user-copy small { color: var(--muted); }
+.discover-user-copy > span { margin-top: 5px; color: var(--muted); font-size: 12px; }
 .web-links { display: grid; gap: 10px; margin-bottom: 10px; }
 .web-link-row { display: grid; grid-template-columns: minmax(130px, .55fr) minmax(240px, 1.45fr) auto; gap: 10px; align-items: end; }
 .web-link-remove { margin-bottom: 1px; }
@@ -185,6 +199,7 @@ button.btn.danger { background: transparent; color: var(--danger); border: 1px s
 @media (max-width: 620px) {
   .web-link-row { grid-template-columns: 1fr auto; }
   .web-link-row label:first-child { grid-column: 1 / -1; }
+  .discover-search { grid-template-columns: 1fr; }
 }
 
 .landing { max-width: 1180px; margin: 0 auto; padding: 0 28px 40px; }

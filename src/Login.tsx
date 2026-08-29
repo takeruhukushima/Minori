@@ -3,6 +3,7 @@ import { createSession, Session } from "./atproto";
 import { startOAuthSignIn } from "./oauth";
 import { Field, Message, Msg } from "./ui";
 import { LocaleSwitcher, useI18n } from "./i18n";
+import { discoverHref } from "./hashRoute";
 
 export function Login({ onPasswordLogin }: { onPasswordLogin: (s: Session) => void }) {
   const { text } = useI18n();
@@ -37,6 +38,7 @@ export function Login({ onPasswordLogin }: { onPasswordLogin: (s: Session) => vo
         </a>
         <div className="row">
           <LocaleSwitcher />
+          <a className="btn ghost small nav-cta" href={discoverHref()}>{text("公開CVを探す", "Find public CVs")}</a>
           <a className="btn ghost small nav-cta" href="#signin">{text("サインイン", "Sign in")}</a>
         </div>
       </header>

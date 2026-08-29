@@ -1,0 +1,103 @@
+/* Public CV layout + print styles. Kept scoped to .cv-* so it does not touch
+   the editing app. Screen: Researchmap-like density, mobile-readable. Print:
+   hide navigation/controls, avoid splitting headings from their items. */
+
+.cv-page {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+  color: var(--text, #1a1a1a);
+}
+
+.cv-centered {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+.cv-error-detail { opacity: 0.7; font-size: 0.85rem; margin: 0.5rem 0 1rem; }
+
+.cv-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.cv-toolbar-right { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+
+/* Header */
+.cv-header { display: flex; gap: 1.25rem; align-items: flex-start; margin-bottom: 1.5rem; }
+.cv-avatar { width: 96px; height: 96px; border-radius: 50%; object-fit: cover; flex: 0 0 auto; }
+.cv-header-body { min-width: 0; }
+.cv-name { font-size: 1.6rem; margin: 0 0 0.15rem; line-height: 1.2; }
+.cv-lang-tag {
+  font-size: 0.6em; vertical-align: super; margin-left: 0.35em;
+  padding: 0.1em 0.4em; border-radius: 0.4em;
+  background: var(--panel, #eee); opacity: 0.75; font-weight: 400;
+}
+.cv-native-name { font-size: 1.05rem; opacity: 0.85; }
+.cv-headline { font-size: 1rem; margin-top: 0.25rem; }
+.cv-current-position { font-size: 0.95rem; opacity: 0.9; }
+.cv-bio { margin: 0.75rem 0; line-height: 1.6; white-space: pre-wrap; }
+.cv-keywords { list-style: none; display: flex; flex-wrap: wrap; gap: 0.4rem; padding: 0; margin: 0.5rem 0; }
+.cv-keyword { font-size: 0.8rem; padding: 0.15rem 0.55rem; border-radius: 1rem; background: var(--panel, #eee); }
+.cv-handle { font-size: 0.8rem; opacity: 0.65; margin-top: 0.5rem; word-break: break-all; }
+.cv-links { list-style: none; display: flex; flex-wrap: wrap; gap: 0.75rem; padding: 0; margin: 0.5rem 0 0; }
+.cv-links a { font-size: 0.85rem; }
+
+/* Table of contents */
+.cv-toc { margin: 1.5rem 0; }
+.cv-toc ul { list-style: none; display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; padding: 0; margin: 0; }
+.cv-toc a { font-size: 0.9rem; }
+
+/* Sections */
+.cv-section { margin: 2rem 0; }
+.cv-section-title { font-size: 1.2rem; border-bottom: 2px solid var(--accent, #4a6); padding-bottom: 0.3rem; margin-bottom: 0.75rem; }
+.cv-count { font-size: 0.75rem; opacity: 0.55; font-weight: 400; margin-left: 0.35rem; }
+.cv-section-error { color: #b00; font-size: 0.85rem; }
+.cv-item-list, .cv-pub-list { list-style: none; padding: 0; margin: 0; }
+.cv-item, .cv-pub { padding: 0.5rem 0; border-bottom: 1px solid var(--border, #eee); }
+.cv-item-title, .cv-pub-title { font-weight: 600; }
+.cv-item-meta, .cv-pub-meta { font-size: 0.85rem; opacity: 0.75; margin-top: 0.15rem; }
+.cv-pub-badge { color: #d90; margin-left: 0.35rem; }
+.cv-pub-cat { opacity: 0.6; }
+.cv-pub-links { margin-top: 0.2rem; display: flex; gap: 0.75rem; }
+.cv-pub-links a { font-size: 0.8rem; }
+.cv-pub-missing { opacity: 0.6; font-style: italic; }
+
+/* Projects */
+.cv-project { margin: 1rem 0; }
+.cv-project-name { font-size: 1rem; margin: 0 0 0.25rem; }
+.cv-project-desc { font-size: 0.9rem; opacity: 0.8; margin: 0 0 0.5rem; }
+
+.cv-showall { background: none; border: none; color: var(--accent, #4a6); cursor: pointer; padding: 0.4rem 0; font-size: 0.85rem; }
+.btn-link { text-decoration: underline; }
+
+.cv-footer { margin-top: 3rem; font-size: 0.75rem; opacity: 0.6; text-align: center; }
+
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+@media (max-width: 620px) {
+  .cv-header { flex-direction: column; }
+  .cv-avatar { width: 72px; height: 72px; }
+}
+
+/* Print: A4-friendly, controls hidden, no awkward breaks (requirement 12) */
+@media print {
+  .no-print, .cv-toolbar, .cv-toc, .cv-footer, .cv-showall { display: none !important; }
+  .cv-page { max-width: none; padding: 0; color: #000; }
+  .cv-section { page-break-inside: auto; margin: 1rem 0; }
+  .cv-section-title { page-break-after: avoid; }
+  .cv-item, .cv-pub, .cv-project { page-break-inside: avoid; }
+  .cv-name { font-size: 18pt; }
+  .cv-section-title { font-size: 13pt; }
+  a { color: #000; text-decoration: none; }
+  .cv-pub-links a::after { content: " (" attr(href) ")"; font-size: 0.75em; opacity: 0.7; }
+}

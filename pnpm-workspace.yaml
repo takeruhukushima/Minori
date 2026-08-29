@@ -1,0 +1,8 @@
+# Approve the postinstall build scripts pnpm blocks by default, so `pnpm
+# install` exits cleanly and the pre-run deps check no longer aborts
+# `pnpm dev` / `pnpm build`. (esbuild ships a prebuilt binary; workerd is only
+# needed for the Cloudflare/wrangler path; core-js is harmless.)
+allowBuilds:
+  core-js: true
+  esbuild: true
+  workerd: true

@@ -7,6 +7,7 @@ import { RecordCardShell, RecordDetailData, RecordDetailDialog } from "../Record
 import { useI18n } from "../i18n";
 import { assertNoUndLanguageTexts, LanguageText, normalizeLanguageTexts, normalizeLanguageTextsForWrite, pickLanguageText, specificLanguageTag } from "../languageText";
 import { repairCurrentStrongRefs } from "../strongRefRepair";
+import { SECTION_RENDER } from "../cv/sections";
 
 type FieldType = "text" | "textarea" | "select" | "checkbox" | "org";
 
@@ -25,15 +26,11 @@ interface SectionDef {
   title: string;
   hint: string;
   fields: FieldDef[];
-  // Which text keys are required (org requires its .name).
-  render: (v: any, locale: string) => { title: string; meta: string };
 }
 
 const languageTexts = (value: unknown): LanguageText[] => {
   return normalizeLanguageTexts(value);
 };
-
-const localized = (value: unknown, locale: string) => pickLanguageText(value, locale);
 
 const ENGLISH: Record<string, string> = {
   "職歴・ポジション (Sifa)": "Employment and positions (Sifa)",
@@ -100,10 +97,6 @@ const SECTIONS: SectionDef[] = [
       { key: "isPrimary", label: "主要な現職", type: "checkbox" },
       { key: "description", label: "職務・実績", type: "textarea" },
     ],
-    render: (v) => ({
-      title: `${v.title ?? "?"}${v.company ? " — " + v.company : ""}`,
-      meta: [v.employmentType?.replace("id.sifa.defs#", ""), [v.startedAt, v.endedAt].filter(Boolean).join("–")].filter(Boolean).join(" · "),
-    }),
   },
   {
     nsid: NSID.education,
@@ -119,10 +112,6 @@ const SECTIONS: SectionDef[] = [
       { key: "endedAt", label: "終了 (YYYY-MM)", placeholder: "2027-03" },
       { key: "thesisTitle", label: "学位論文タイトル", type: "textarea", localized: true },
     ],
-    render: (v, locale) => ({
-      title: `${localized(v.institution?.name, locale) || "?"}${localized(v.degreeName, locale) ? " — " + localized(v.degreeName, locale) : ""}`,
-      meta: [v.status, [v.startedAt, v.endedAt].filter(Boolean).join("–")].filter(Boolean).join(" · "),
-    }),
   },
   {
     nsid: NSID.award,
@@ -138,10 +127,6 @@ const SECTIONS: SectionDef[] = [
       { key: "description", label: "説明", type: "textarea", localized: true },
       { key: "url", label: "URL" },
     ],
-    render: (v, locale) => ({
-      title: localized(v.name, locale) || "?",
-      meta: [localized(v.conferredBy?.name, locale), v.date].filter(Boolean).join(" · "),
-    }),
   },
   {
     nsid: NSID.presentation,
@@ -160,10 +145,6 @@ const SECTIONS: SectionDef[] = [
       { key: "refereed", label: "査読あり", type: "checkbox" },
       { key: "isOnline", label: "オンライン開催", type: "checkbox" },
     ],
-    render: (v, locale) => ({
-      title: localized(v.title, locale) || "?",
-      meta: [v.type, localized(v.eventName, locale), v.date].filter(Boolean).join(" · "),
-    }),
   },
   {
     nsid: NSID.grant,
@@ -181,10 +162,6 @@ const SECTIONS: SectionDef[] = [
       { key: "endedAt", label: "終了 (YYYY)", placeholder: "2027" },
       { key: "url", label: "URL" },
     ],
-    render: (v, locale) => ({
-      title: localized(v.title, locale) || "?",
-      meta: [localized(v.funder?.name, locale), localized(v.programName, locale), v.awardNumber].filter(Boolean).join(" · "),
-    }),
   },
   {
     nsid: NSID.service,
@@ -199,7 +176,6 @@ const SECTIONS: SectionDef[] = [
       { key: "endedAt", label: "終了", placeholder: "2026-03" },
       { key: "status", label: "状態", type: "select", options: opt(["current", "past"]) },
     ],
-    render: (v, locale) => ({ title: localized(v.venue, locale) || "?", meta: [v.type, localized(v.roleTitle, locale), v.startedAt].filter(Boolean).join(" · ") }),
   },
   {
     nsid: NSID.membership,
@@ -212,7 +188,6 @@ const SECTIONS: SectionDef[] = [
       { key: "startedAt", label: "開始", placeholder: "2022" },
       { key: "endedAt", label: "終了", placeholder: "2025" },
     ],
-    render: (v, locale) => ({ title: localized(v.organization?.name, locale) || "?", meta: [v.grade, v.status].filter(Boolean).join(" · ") }),
   },
   {
     nsid: NSID.teaching,
@@ -226,7 +201,6 @@ const SECTIONS: SectionDef[] = [
       { key: "startedAt", label: "開始", placeholder: "2024-04" },
       { key: "endedAt", label: "終了", placeholder: "2024-09" },
     ],
-    render: (v, locale) => ({ title: localized(v.courseName, locale) || "?", meta: [localized(v.institution?.name, locale), v.role, v.startedAt].filter(Boolean).join(" · ") }),
   },
   {
     nsid: NSID.supervision,
@@ -241,7 +215,6 @@ const SECTIONS: SectionDef[] = [
       { key: "startedAt", label: "開始", placeholder: "2024" },
       { key: "endedAt", label: "終了", placeholder: "2026" },
     ],
-    render: (v, locale) => ({ title: localized(v.thesisTitle, locale) || v.role || "?", meta: [v.degree, v.status, localized(v.institution?.name, locale)].filter(Boolean).join(" · ") }),
   },
   {
     nsid: NSID.patent,
@@ -256,7 +229,6 @@ const SECTIONS: SectionDef[] = [
       { key: "filingDate", label: "出願日", placeholder: "2025-01-20" },
       { key: "url", label: "URL" },
     ],
-    render: (v, locale) => ({ title: localized(v.title, locale) || "?", meta: [v.rightType, v.applicationNumber, v.status].filter(Boolean).join(" · ") }),
   },
   {
     nsid: NSID.outreach,
@@ -272,7 +244,6 @@ const SECTIONS: SectionDef[] = [
       { key: "url", label: "URL" },
       { key: "description", label: "説明", type: "textarea", localized: true },
     ],
-    render: (v, locale) => ({ title: localized(v.title, locale) || "?", meta: [v.kind, localized(v.organizer?.name, locale) || localized(v.mediaOutlet, locale), v.startedAt].filter(Boolean).join(" · ") }),
   },
   {
     nsid: NSID.work,
@@ -286,7 +257,6 @@ const SECTIONS: SectionDef[] = [
       { key: "url", label: "URL" },
       { key: "description", label: "説明", type: "textarea", localized: true },
     ],
-    render: (v, locale) => ({ title: localized(v.title, locale) || "?", meta: [v.kind, localized(v.organization?.name, locale), v.startedAt].filter(Boolean).join(" · ") }),
   },
   {
     nsid: NSID.openSourceContribution,
@@ -301,7 +271,6 @@ const SECTIONS: SectionDef[] = [
       { key: "status", label: "状態", type: "select", options: opt(["active", "maintenance", "past", "archived"]) },
       { key: "description", label: "説明", type: "textarea", localized: true },
     ],
-    render: (v, locale) => ({ title: localized(v.name, locale) || "?", meta: [v.projectKind, v.role, v.status].filter(Boolean).join(" · ") }),
   },
 ];
 
@@ -740,7 +709,7 @@ function Section({ client, def }: { client: Repo; def: SectionDef }) {
       <div className="list">
         {records.length === 0 && <div className="empty">{text("まだ登録がありません。", "No records yet.")}</div>}
         {records.map((r) => {
-          const { title, meta } = def.render(r.value, locale);
+          const { title, meta } = SECTION_RENDER[def.nsid](r.value, locale);
           return (
             <RecordCardShell
               key={r.uri}

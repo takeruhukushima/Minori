@@ -49,8 +49,8 @@ export async function verifyPdsWrite(
     const createdAt = now();
     const written = await client.createRecord(NSID.collection, {
       $type: NSID.collection,
-      name: "Minori PDS write diagnostic",
-      description: "Temporary record created and deleted by Minori's connection diagnostic.",
+      name: [{ language: "en", value: "Minori PDS write diagnostic" }],
+      description: [{ language: "en", value: "Temporary record created and deleted by Minori's connection diagnostic." }],
       purpose: "topic",
       createdAt,
     });
